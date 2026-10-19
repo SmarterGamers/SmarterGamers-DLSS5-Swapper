@@ -39,7 +39,7 @@
         "nsis",
         "portable"
       ],
-      "icon": "src/renderer/icon.png"
+      "icon": "src/renderer/icon.ico"
     },
     "extraResources": [
       {
