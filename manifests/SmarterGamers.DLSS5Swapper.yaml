@@ -1,0 +1,34 @@
+# yaml-language-server: $schema=https://aka.ms/winget-manifest.singleton.1.6.0.schema.json
+
+PackageIdentifier: SmarterGamers.DLSS5Swapper
+PackageVersion: 2.3.0
+PackageLocale: en-US
+PackageName: SmarterGamers DLSS 5 Swapper
+Publisher: SmarterGamers
+PublisherUrl: https://SmarterGamers.com
+PublisherSupportUrl: https://smartergamers.com/support/
+Author: SmarterGamers
+PackageUrl: https://github.com/SmarterGamers/SmarterGamers-DLSS5-Swapper
+License: MIT
+LicenseUrl: https://raw.githubusercontent.com/SmarterGamers/SmarterGamers-DLSS5-Swapper/main/LICENSE
+Copyright: Copyright (c) 2026 SmarterGamers
+ShortDescription: Open-source DLSS 5 (Neural Rendering) manager and injection utility for PC games.
+Description: SmarterGamers DLSS 5 Swapper is an open-source utility designed to make modern neural rendering, upscaling injection, and graphics translation straightforward and safe for PC games.
+Moniker: smartergamers-dlss5-swapper
+Tags:
+  - dlss
+  - dlss5
+  - gaming
+  - upscaler
+  - optiscaler
+  - reshade
+  - dgvoodoo2
+  - renodx
+Installers:
+  - Architecture: x64
+    InstallerType: nullsoft
+    InstallerUrl: https://github.com/SmarterGamers/SmarterGamers-DLSS5-Swapper/releases/download/v2.3.0/SmarterGamers.DLSS.5.Swapper.Setup.2.3.0.exe
+    InstallerSha256: DEA794C83D701A09BBD173274086F8D9FBBDE566797A29463CAE58BC8842701F
+    Scope: user
+ManifestType: singleton
+ManifestVersion: 1.6.0

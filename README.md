@@ -43,6 +43,31 @@ Your contributions help us keep tools open, safe, and available for everyone.
 
 ---
 
+## ⚡ Quick Install (Recommended for Gamers)
+
+If you just want to use the app on your PC without setting up Node.js or compiling code:
+
+### Method 1: 1-Line Quick Install (PowerShell)
+Press <kbd>Win</kbd> + <kbd>X</kbd>, select **Terminal** (or **PowerShell**), paste this command, and press <kbd>Enter</kbd>:
+```powershell
+irm https://raw.githubusercontent.com/SmarterGamers/SmarterGamers-DLSS5-Swapper/main/install.ps1 | iex
+```
+*This automatically downloads the latest verified GitHub release, verifies checksums, and installs the desktop app with one click.*
+
+### Method 2: Windows Package Manager (`winget`)
+Install using the included `winget` manifest:
+```cmd
+winget install -m https://raw.githubusercontent.com/SmarterGamers/SmarterGamers-DLSS5-Swapper/main/manifests/SmarterGamers.DLSS5Swapper.yaml
+```
+*(Note: If prompted by Windows, enable local manifest support once with `winget settings --enable LocalManifestFiles`).*
+
+### Method 3: Direct Download (.exe)
+Download and run the installer directly from our official GitHub release:
+* 📥 **[Download Windows Installer (`.exe`)](https://github.com/SmarterGamers/SmarterGamers-DLSS5-Swapper/releases/latest)**
+* 📦 **[Download Portable Edition (`.exe`)](https://github.com/SmarterGamers/SmarterGamers-DLSS5-Swapper/releases/latest)**
+
+---
+
 ## 🛠️ Building & Running from Source
 
 ### Prerequisites
