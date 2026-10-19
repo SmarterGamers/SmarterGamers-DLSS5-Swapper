@@ -1,0 +1,65 @@
+{
+  "name": "smartergamers-dlss5-swapper",
+  "productName": "SmarterGamers DLSS 5 Swapper",
+  "version": "2.3.0",
+  "description": "Open-source DLSS 5 (Neural Rendering) manager and injection utility for PC games",
+  "main": "main.js",
+  "author": "SmarterGamers <support@smartergamers.com> (https://SmarterGamers.com)",
+  "homepage": "https://SmarterGamers.com",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/SmarterGamers/SmarterGamers-DLSS5-Swapper.git"
+  },
+  "bugs": {
+    "url": "https://github.com/SmarterGamers/SmarterGamers-DLSS5-Swapper/issues"
+  },
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder",
+    "pack": "electron-builder --dir",
+    "dist": "electron-builder --win"
+  },
+  "dependencies": {
+    "extract-zip": "^2.0.1"
+  },
+  "devDependencies": {
+    "electron": "^32.1.2",
+    "electron-builder": "^25.0.5"
+  },
+  "build": {
+    "appId": "com.smartergamers.dlss5swapper",
+    "productName": "SmarterGamers DLSS 5 Swapper",
+    "copyright": "Copyright © 2026 SmarterGamers",
+    "directories": {
+      "output": "dist"
+    },
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ],
+      "icon": "src/renderer/icon.png"
+    },
+    "extraResources": [
+      {
+        "from": "resources/payload",
+        "to": "payload",
+        "filter": [
+          "**/*"
+        ]
+      },
+      {
+        "from": "resources/overlay",
+        "to": "overlay",
+        "filter": [
+          "**/*"
+        ]
+      },
+      {
+        "from": "resources/elevate.exe",
+        "to": "elevate.exe"
+      }
+    ]
+  }
+}

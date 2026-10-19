@@ -1,0 +1,20 @@
+# Dependency directories
+node_modules/
+package-lock.json
+
+# Build outputs
+dist/
+out/
+build/
+*.asar
+
+# Local caches & runtime data
+components/
+.verified
+*.log
+*.part
+
+# Environment & OS files
+.DS_Store
+Thumbs.db
+*.tmp

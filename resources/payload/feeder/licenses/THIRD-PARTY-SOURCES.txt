@@ -1,0 +1,6 @@
+DLSS5-Feeder v1.17.0 — https://github.com/jlrouzies-fr/DLSS5-Feeder
+VORT shaders b410b9f0c0fbb83c8cb42164aaf1655fab386f4a — https://github.com/vortigern11/vort_Shaders
+ReShade headers ee30868391d4ad103db60489820102d8fd40e3c1 — https://github.com/crosire/reshade-shaders
+dgVoodoo2 v2.87.5 — downloaded at runtime; not bundled — https://github.com/dege-diosg/dgVoodoo2
+RenoDX DLSS5 add-on v6.5.3 — https://github.com/clshortfuse/renodx
+RenoDX DLSS Tool add-on SF 26.0927.2125 — https://github.com/clshortfuse/renodx
