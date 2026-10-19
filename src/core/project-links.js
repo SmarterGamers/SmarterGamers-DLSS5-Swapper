@@ -5,7 +5,7 @@ const links = Object.freeze({
   github: 'https://github.com/SmarterGamers/SmarterGamers-DLSS5-Swapper',
   releases: 'https://github.com/SmarterGamers/SmarterGamers-DLSS5-Swapper/releases/latest',
   website: 'https://SmarterGamers.com',
-  donate: 'https://SmarterGamers.com/donate',
+  donate: 'https://smartergamers.com/support/',
   coffee: 'https://buymeacoffee.com/SmarterGamers'
 });
 function projectUrl(key) {

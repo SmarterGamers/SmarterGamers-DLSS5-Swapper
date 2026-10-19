@@ -36,7 +36,7 @@ Following community discussions regarding past releases, this repository provide
 Maintaining and improving open-source gaming utilities requires ongoing testing and infrastructure:
 
 * **Official Website:** [SmarterGamers.com](https://SmarterGamers.com)
-* **Donate / Support:** [SmarterGamers.com/donate](https://SmarterGamers.com/donate)
+* **Donate / Support:** [smartergamers.com/support](https://smartergamers.com/support/)
 * **Buy Me a Coffee:** [buymeacoffee.com/SmarterGamers](https://buymeacoffee.com/SmarterGamers)
 
 Your contributions help us keep tools open, safe, and available for everyone.
