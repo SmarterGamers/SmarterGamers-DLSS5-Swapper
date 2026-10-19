@@ -1,0 +1,48 @@
+name: Bug Report
+description: Create a report to help us improve SmarterGamers DLSS 5 Swapper
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report an issue! Please check existing issues before submitting.
+  - type: input
+    id: game-title
+    attributes:
+      label: Game Title
+      description: What game was being modified or scanned?
+      placeholder: "e.g. Cyberpunk 2077, Forza Horizon 5"
+    validations:
+      required: false
+  - type: dropdown
+    id: route
+    attributes:
+      label: Installation Route / Backend
+      options:
+        - "Native Route (RenoDX)"
+        - "DLSS5-Feeder (ReShade + Motion Vectors)"
+        - "OptiScaler DLSS-NR"
+        - "Legacy DirectX (dgVoodoo2)"
+        - "General App UI / Library Scan"
+    validations:
+      required: true
+  - type: input
+    id: gpu-driver
+    attributes:
+      label: GPU & NVIDIA Driver Version
+      placeholder: "e.g. RTX 4080 - Driver 560.94"
+    validations:
+      required: false
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: Describe what bug or error occurred.
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant Logs or Error Messages
+      description: Paste any logs from the app or game folder here.
+      render: shell

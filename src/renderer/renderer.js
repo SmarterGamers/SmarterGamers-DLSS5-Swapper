@@ -865,17 +865,10 @@ async function showUpdateNotice() {
   if (!link || !window.lab.checkUpdate) return;
   let answer = null;
   try { answer = await window.lab.checkUpdate(); } catch { return; }
-  if (!answer) return;
-  // A failed lookup used to look exactly like "nothing new", so someone on an
-  // old build whose check never completed was told nothing at all and had no
-  // reason to go and look. Say which of the two it was.
-  if (!answer.latest) {
-    link.textContent = t('updateCheckFailed');
-    link.classList.add('muted');
-    link.classList.remove('hidden');
+  if (!answer || !answer.newer) {
+    link.classList.add('hidden');
     return;
   }
-  if (!answer.newer) return;
   link.textContent = t('updateAvailable', answer.latest);
   link.classList.remove('muted');
   link.classList.remove('hidden');
@@ -1196,7 +1189,7 @@ document.querySelector('.link[data-view]').onclick = () => show('games');
 function paintBrand() {
   const art = state.theme === 'dark' ? (state.logo.logoDark || state.logo.logo) : state.logo.logo;
   $('brand').innerHTML = art
-    ? `<img src="${art}" alt="SmarterGamers DLSS 5">`
+    ? `<img src="${art}" alt="SmarterGamers DLSS 5"><div style="font-size:10px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:#10b981;margin-top:5px;opacity:0.95;user-select:none;">by SmarterGamers</div>`
     : '<b style="font-size:18px;font-weight:700">SmarterGamers <span style="color:#ffca28">DLSS 5</span></b>';
 }
 

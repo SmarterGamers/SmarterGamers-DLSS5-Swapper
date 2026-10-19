@@ -142,6 +142,20 @@ svg { fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round
   box-shadow: 0 4px 14px rgba(20, 32, 45, .07);
 }
 .nav-item.active .dot { background: var(--accent); box-shadow: 0 0 8px rgba(108, 193, 10, .6); }
+.nav-donate {
+  margin-top: 10px;
+  background: rgba(245, 158, 11, 0.08);
+  border: 1px solid rgba(245, 158, 11, 0.22);
+  color: #f59e0b !important;
+  font-weight: 600;
+  transition: all .2s ease;
+}
+.nav-donate:hover {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(217, 119, 6, 0.25));
+  border-color: rgba(245, 158, 11, 0.5);
+  color: #fbbf24 !important;
+  box-shadow: 0 4px 16px rgba(245, 158, 11, 0.2);
+}
 
 /* ---------------- community ---------------- */
 .community-heading { align-items: flex-start; }

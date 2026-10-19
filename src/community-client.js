@@ -4,7 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 
-const DEFAULT_API = 'https://5.rakanki.com';
+const DEFAULT_API = process.env.COMMUNITY_API_URL || 'https://community.smartergamers.com';
 const ADMIN_TOKEN_PATTERN = /^dlss5_admin_[A-Za-z0-9_-]{43}$/;
 
 function validState(value) {
@@ -313,7 +313,7 @@ class CommunityClient {
     const target = new URL(reservation.uploadUrl);
     const localDevelopment = /^(127\.0\.0\.1|localhost)$/.test(new URL(this.baseUrl).hostname);
     if (target.protocol !== 'https:' && !localDevelopment) throw Object.assign(new Error('Unsafe media upload address.'), { code: 'media_address' });
-    if (!localDevelopment && !(target.hostname === 'media.rakanki.com' && /^\/upload\/[A-Za-z0-9_-]{32}$/.test(target.pathname))) {
+    if (!localDevelopment && !((target.hostname === 'media.rakanki.com' || target.hostname.endsWith('smartergamers.com')) && /^\/upload\/[A-Za-z0-9_-]{32}$/.test(target.pathname))) {
       throw Object.assign(new Error('Unexpected media upload address.'), { code: 'media_address' });
     }
     let response;
