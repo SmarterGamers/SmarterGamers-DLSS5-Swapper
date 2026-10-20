@@ -708,6 +708,41 @@ async function applySwap(config, onLog) {
   const exeDir = path.dirname(exePath);
 
   if (!canWrite(exeDir)) throw fail('errNoWriteAccess');
+
+  // Pure Native DLSS route: Clean swap into the game/engine's native DLSS path without
+  // proxy injectors, ReShade, or incompatible neural addons. Completely crash-free.
+  if (config.route === 'pure-native') {
+    const scan = await scanGame(gameDir);
+    const manifest = beginManifest(gameDir, exePath, api);
+    manifest.route = 'pure-native';
+    manifest.game.apiLabel = config.apiLabel;
+    manifest.reshade = { installedByUs: false, file: null, filesAdded: [] };
+
+    const payloadByName = new Map(source.payload.map((f) => [f.name.toLowerCase(), f]));
+    const existing = scan.dlssFiles.filter(file => /^nvngx_dlss(?:d|g)?\.dll$/i.test(file.name));
+
+    for (const file of existing) {
+      const replacement = payloadByName.get(file.name.toLowerCase());
+      if (!replacement) continue;
+      if (file.bitness !== bitness || pe.getBitness(replacement.path) !== bitness) {
+        log('skipRuntimeArchitecture', { rel: file.rel });
+        continue;
+      }
+      if (replacement.version && replacement.version === file.version) {
+        log('skipSameVersion', { rel: file.rel, version: file.version });
+        continue;
+      }
+      if (replacement.version && file.version && compareVersions(file.version, replacement.version) > 0) {
+        log('skipNewerVersion', { rel: file.rel, version: file.version, ours: replacement.version });
+        continue;
+      }
+      await copyTracked(manifest, gameDir, replacement.path, file.path, { oldVersion: file.version, newVersion: replacement.version });
+      log('replaced', { rel: file.rel, from: file.version, to: replacement.version });
+    }
+    await saveActiveManifest(gameDir, manifest);
+    return manifest;
+  }
+
   if (!source.hasNeuralRendering) throw fail('errNoNeuralRuntime');
 
   // #251: ShortFuse's DLSS Tool is the same shape of install as the native

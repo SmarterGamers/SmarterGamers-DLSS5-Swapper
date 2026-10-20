@@ -11,6 +11,7 @@ const crypto = require('crypto');
 
 const os = require('os');
 const diagnostics = require('./src/core/diagnostics');
+const crashDoctor = require('./src/core/crash-doctor');
 const { scanGame } = require('./src/core/scan.js');
 const { discover, folder, dedupe, isInside, steam } = require('./src/library');
 const { contextForSteamGame, createSetupRunner } = require('./src/core/proton');
@@ -610,6 +611,24 @@ ipcMain.handle('save-diagnostics', async (event, dir, activity) => {
 ipcMain.handle('copy-text', (_event, text) => {
   if (typeof text !== 'string' || !text.trim() || Buffer.byteLength(text, 'utf8') > 16 * 1024 * 1024) return false;
   try { clipboard.writeText(text); return true; } catch { return false; }
+});
+
+ipcMain.handle('diagnose-game-crashes', async (_event, dir) => {
+  if (typeof dir !== 'string' || !path.isAbsolute(dir)) return { ok: false, error: 'Invalid directory' };
+  try {
+    return crashDoctor.diagnoseGame(dir);
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
+});
+
+ipcMain.handle('optimize-game-profile', async (_event, dir, options) => {
+  if (typeof dir !== 'string' || !path.isAbsolute(dir)) return { ok: false, error: 'Invalid directory' };
+  try {
+    return await crashDoctor.optimizeGame(dir, options);
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
 });
 
 ipcMain.handle('game-menu', async (event, dir, options) => {
@@ -1675,7 +1694,8 @@ ipcMain.handle('details', async (_event, dir) => {
     addon: scan.addonPresent,
     reshade: scan.reshade,
     hasBackup: scan.hasBackup || fs.existsSync(journal.pendingPath(dir)),
-    newDlss: detailsPayload && detailsPayload.source ? detailsPayload.source.dlssVersion : null
+    newDlss: detailsPayload && detailsPayload.source ? detailsPayload.source.dlssVersion : null,
+    crashDiagnosis: crashDoctor.diagnoseGame(dir)
   };
 });
 

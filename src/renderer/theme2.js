@@ -402,6 +402,25 @@
                     <button class="gp-mini" id="gpExeFolder" title="${esc(t('t2OpenFolder'))}">${icon(ICONS.folder, 15)}</button>
                   </div>
                 </div>
+                ${(d.crashDiagnosis?.crashed || (d.crashDiagnosis?.conflictingFiles && d.crashDiagnosis.conflictingFiles.length > 0)) ? `
+                  <div class="crash-doctor-box" id="crashDoctorBox" style="margin:12px 0;padding:12px 14px;border-radius:8px;background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.35);">
+                    <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px;">
+                      <strong style="color:#ef4444;font-size:13px;display:flex;align-items:center;gap:6px;">
+                        <svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:none;stroke:#ef4444;stroke-width:2"><path d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
+                        Crash / Conflict Detected: ${esc(d.crashDiagnosis.errorCode || 'Graphics Device Hung')}
+                      </strong>
+                      <span style="font-size:11px;color:var(--dim);">${esc(d.crashDiagnosis.engine || '')}</span>
+                    </div>
+                    <p style="margin:0 0 8px 0;font-size:12px;line-height:1.4;color:var(--text);">${esc(d.crashDiagnosis.errorDescription || 'A GPU crash dump or hook collision was detected.')}</p>
+                    ${d.crashDiagnosis.rootCauses?.length ? `<ul style="margin:0 0 10px 0;padding-left:18px;font-size:11.5px;color:var(--dim);">${d.crashDiagnosis.rootCauses.map(c => `<li>${esc(c)}</li>`).join('')}</ul>` : ''}
+                    <div style="display:flex;gap:8px;align-items:center;">
+                      <button class="btn-crash-fix" id="btnAutoFixCrash" style="background:#ef4444;color:#fff;border:none;border-radius:6px;padding:6px 14px;font-size:12px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:6px;">
+                        <svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>
+                        Auto-Fix & Optimize Profile (Pure Native DLSS)
+                      </button>
+                    </div>
+                  </div>
+                ` : ''}
                 ${installOptions(d, pick, dir)}
               </div>
               <div class="gp-folder">
@@ -488,6 +507,8 @@
       const button = q('#' + id);
       if (button) button.onclick = () => window.lab.open(game.dir);
     }
+    const btnAutoFix = q('#btnAutoFixCrash');
+    if (btnAutoFix) btnAutoFix.onclick = () => runCrashAutoFix(dir);
     const viewAll = q('#gpViewAll');
     if (viewAll) viewAll.onclick = () => { closeSheet(); show('games'); };
     for (const row of document.querySelectorAll('.gp-recent')) {

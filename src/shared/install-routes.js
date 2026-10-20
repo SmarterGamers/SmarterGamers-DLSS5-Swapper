@@ -35,6 +35,7 @@
     }
     if (api !== 'dxgi') return [];
     const routes = target.bitness === 32 || target.emulator || target.apiLabel !== 'DirectX 12' ? ['feeder'] : ['native', 'feeder'];
+    if (target.hasNativeDlss) routes.unshift('pure-native');
     if (!optiReason(target, api)) routes.push('optiscaler');
     // #251. The DLSS Tool hooks Present, and its own description says what that
     // covers: "Present supports D3D9, D3D11, and D3D12 presentation. D3D9 and
@@ -49,7 +50,8 @@
     const routes = routesFor(target);
     const nativeDlss = nativeDlssPresent(scan);
     const wanted = scan.install && scan.install.route === 'feeder'
-      ? 'feeder' : nativeDlss ? 'native' : 'feeder';
+      ? 'feeder' : scan.install && scan.install.route === 'pure-native'
+      ? 'pure-native' : nativeDlss ? 'pure-native' : 'feeder';
     return routes.includes(wanted) ? wanted : (routes[0] || null);
   }
   const api = { routesFor, recommendedRoute, nativeDlssPresent, optiReason };

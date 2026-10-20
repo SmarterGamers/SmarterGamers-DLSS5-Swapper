@@ -62,6 +62,7 @@ function assertAntiCheatConsent(gameDir, exePath, acknowledged) {
 }
 function assertLoaderCompatible(config, manifest) {
   const { gameDir, exePath, api, bitness, route } = config;
+  if (route === 'pure-native') return;
   const dir = path.dirname(exePath);
   const legacy = api === 'd3d8' || api === 'd3d9';
   const hook = api === 'opengl' ? 'opengl32.dll' : 'dxgi.dll';

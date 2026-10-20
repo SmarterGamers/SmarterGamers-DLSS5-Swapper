@@ -17,3 +17,4 @@ components/
 .DS_Store
 Thumbs.db
 *.tmp
+scratch/

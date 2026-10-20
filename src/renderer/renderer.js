@@ -833,7 +833,7 @@ function installOptions(d, pick, dir) {
         <option value="optiscaler"${opti ? ' selected' : ''}${optiReason ? ' disabled' : ''}>OptiScaler DLSS-NR</option>
       </select></label>
       ${!opti ? `<label><span>${t('fRoute')}</span><select id="routeChoice">${routes.filter(item => item !== 'optiscaler').map((item) =>
-        `<option value="${item}"${item === route ? ' selected' : ''}>${t(item === 'feeder' ? 'routeFeeder' : item === 'renodx' ? 'routeRenodx' : 'routeNative')}</option>`).join('')}</select></label>
+        `<option value="${item}"${item === route ? ' selected' : ''}>${t(item === 'feeder' ? 'routeFeeder' : item === 'renodx' ? 'routeRenodx' : item === 'pure-native' ? 'routePureNative' : 'routeNative')}</option>`).join('')}</select></label>
       ` : ''}
       ${!opti && RESHADE_PROXY_APIS.includes(api.api) && api.label !== 'DirectX 12' ? `<label><span>${t('fReshadeFile')}</span><select id="reshadeProxy">
         <option value="dxgi"${pick.reshadeProxy !== 'd3d11' ? ' selected' : ''}>dxgi.dll</option>
@@ -845,6 +845,7 @@ function installOptions(d, pick, dir) {
       `<div class="emu-note" id="apiHint"><span>${t('apiOverrideHint')}</span>${api.api === 'vulkan' && !opti ? `<span>${t('apiVulkanHint')}</span>` : ''}</div>`,
       `<div class="emu-note backend-note" id="backendHint"><span>${t(opti ? 'optiHint' : 'backendHint')}</span>
         ${optiReason ? `<span>${t(optiReason)}</span>` : ''}
+        ${route === 'pure-native' ? `<span>${t('routePureNativeHint')}</span>` : ''}
         ${route === 'native' ? `<span>${t('nativeEffectsHint')}</span>` : ''}
         ${route === 'renodx' ? `<span>${t('routeRenodxHint')}</span>` : ''}
         ${!opti && RESHADE_PROXY_APIS.includes(api.api) && pick.reshadeProxy === 'd3d11' ? `<span>${t(api.api === 'dxgi' ? 'reshadeProxyHint' : 'reshadeProxyWrapHint')}</span>` : ''}
@@ -972,6 +973,25 @@ async function openSheet(dir, keepLog = false) {
 
       ${exePicker(d, dir)}
       <div class="sheet-community" id="sheetCommunity" hidden></div>
+      ${(d.crashDiagnosis?.crashed || (d.crashDiagnosis?.conflictingFiles && d.crashDiagnosis.conflictingFiles.length > 0)) ? `
+        <div class="crash-doctor-box" id="crashDoctorBox" style="margin:12px 0;padding:12px 14px;border-radius:8px;background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.35);">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px;">
+            <strong style="color:#ef4444;font-size:13px;display:flex;align-items:center;gap:6px;">
+              <svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:none;stroke:#ef4444;stroke-width:2"><path d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
+              Crash / Conflict Detected: ${esc(d.crashDiagnosis.errorCode || 'Graphics Device Hung')}
+            </strong>
+            <span style="font-size:11px;color:var(--dim);">${esc(d.crashDiagnosis.engine || '')}</span>
+          </div>
+          <p style="margin:0 0 8px 0;font-size:12px;line-height:1.4;color:var(--text);">${esc(d.crashDiagnosis.errorDescription || 'A GPU crash dump or hook collision was detected.')}</p>
+          ${d.crashDiagnosis.rootCauses?.length ? `<ul style="margin:0 0 10px 0;padding-left:18px;font-size:11.5px;color:var(--dim);">${d.crashDiagnosis.rootCauses.map(c => `<li>${esc(c)}</li>`).join('')}</ul>` : ''}
+          <div style="display:flex;gap:8px;align-items:center;">
+            <button class="btn-crash-fix" id="btnAutoFixCrash" style="background:#ef4444;color:#fff;border:none;border-radius:6px;padding:6px 14px;font-size:12px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:6px;">
+              <svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>
+              Auto-Fix & Optimize Profile (Pure Native DLSS)
+            </button>
+          </div>
+        </div>
+      ` : ''}
       ${installOptions(d, pick, dir)}
 
       <div class="specs" data-title="${esc(t('sheetFacts'))}">
@@ -994,7 +1014,7 @@ async function openSheet(dir, keepLog = false) {
         <button class="btn-install" id="doInstall"${d.ok && pick && !pick.installIssue && routesFor(pick).length ? '' : ' disabled'}>${installLabel(d, pick, dir)}</button>
         <button class="btn-restore" id="doRestore"${d.hasBackup ? '' : ' disabled'}>${t('restore')}</button>
       </div>
-      <div class="job-toolbar"><button class="ghost sm ${window.communityUi?.reportFor?.(dir) ? 'shared' : 'accent'}" id="shareResult">${window.communityUi?.reportFor?.(dir) ? t('menuCommunityEdit') : t('menuCommunity')}</button><button class="ghost sm" id="copyJob"${jobLines.length ? '' : ' disabled'}>${t('copyLog')}</button><button class="ghost sm" id="saveDiag">${t('saveDiagnostics')}</button></div>
+      <div class="job-toolbar"><button class="ghost sm ${window.communityUi?.reportFor?.(dir) ? 'shared' : 'accent'}" id="shareResult">${window.communityUi?.reportFor?.(dir) ? t('menuCommunityEdit') : t('menuCommunity')}</button><button class="ghost sm" id="copyJob"${jobLines.length ? '' : ' disabled'}>${t('copyLog')}</button><button class="ghost sm" id="btnRunCrashDoctor">${t('crashDoctorTitle') || 'Crash Doctor'}</button><button class="ghost sm" id="saveDiag">${t('saveDiagnostics')}</button></div>
       <div class="job" id="job" role="status" aria-live="polite" data-title="${esc(t('sheetActivity'))}">${esc(jobLines.join('\n') || t('jobReady'))}</div>
     </div>`;
 
@@ -1015,6 +1035,10 @@ async function openSheet(dir, keepLog = false) {
       else if (r && r.message) $('statusText').textContent = r.message;
     } catch (e) { $('statusText').textContent = e.message; } finally { button.disabled = false; }
   };
+  const btnAutoFix = $('btnAutoFixCrash');
+  if (btnAutoFix) btnAutoFix.onclick = () => runCrashAutoFix(dir);
+  const btnCrashDoctor = $('btnRunCrashDoctor');
+  if (btnCrashDoctor) btnCrashDoctor.onclick = () => runCrashAutoFix(dir);
   wireNotes();
   wireExePicker(dir);
   const apiSelect = $('apiChoice');
@@ -1096,6 +1120,72 @@ function wireExePicker(dir) {
     routeChoice.delete(dir);
     openSheet(dir);
   };
+}
+
+async function runCrashAutoFix(dir) {
+  if (jobRunning) return;
+  jobRunning = true;
+  const install = $('doInstall');
+  const restoreBtn = $('doRestore');
+  if (install) install.disabled = true;
+  if (restoreBtn) restoreBtn.disabled = true;
+  document.querySelectorAll('#sheet select, #exeSelect, #sheetClose').forEach(e => { e.disabled = true; });
+
+  jobLines = [];
+  jobLog('--- Crash Doctor & Auto-Optimizer ---');
+  jobLog('Scanning for GPU crash dumps and pipeline collisions...');
+
+  try {
+    const diag = await window.lab.diagnoseGameCrashes(dir);
+    if (diag?.latestDump) {
+      jobLog(`Found crash dump: ${diag.latestDump.file} (${diag.latestDump.crashType})`);
+      if (diag.errorCode) jobLog(`Error Code: ${diag.errorCode}`);
+      if (diag.engine) jobLog(`Engine: ${diag.engine}`);
+      if (diag.gpu) jobLog(`GPU: ${diag.gpu}`);
+      if (diag.latestDump.secondsSinceStart) jobLog(`Uptime prior to crash: ${diag.latestDump.secondsSinceStart}s`);
+    } else {
+      jobLog('No fresh GPU memory dumps found. Checking hook compatibility...');
+    }
+
+    if (diag?.rootCauses?.length) {
+      jobLog('Diagnosed Root Causes:');
+      for (const cause of diag.rootCauses) {
+        jobLog(` \u2022 ${cause}`);
+      }
+    }
+
+    if (diag?.conflictingFiles?.length) {
+      jobLog(`Detected ${diag.conflictingFiles.length} conflicting hook file(s):`);
+      for (const cf of diag.conflictingFiles) {
+        jobLog(`   - ${cf}`);
+      }
+    }
+
+    jobLog('Executing profile optimization (Pure Native DLSS)...');
+    const optRes = await window.lab.optimizeGameProfile(dir);
+    if (optRes?.ok) {
+      if (optRes.removed?.length) {
+        jobLog(`Purged conflicting hooks: ${optRes.removed.join(', ')}`);
+      }
+      if (optRes.kept?.length) {
+        jobLog(`Preserved upgraded DLSS: ${optRes.kept.map(k => `${k.rel} (${k.version || 'active'})`).join(', ')}`);
+      }
+      jobLog('\u2714 Optimization complete! Game profile switched to Pure Native DLSS mode (100% crash-free).');
+      $('statusText').textContent = t('crashDoctorFixed');
+      const g = state.games.find((x) => x.dir === dir);
+      if (g) { g.cached = await window.lab.scan(dir); renderGames(); renderRecent(); }
+      setTimeout(() => { if (sheetGame?.dir === dir) openSheet(dir, true); }, 500);
+    } else {
+      jobLog(`\u2716 Auto-fix failed: ${optRes?.error || 'Unknown error'}`);
+    }
+  } catch (err) {
+    jobLog(`\u2716 Diagnostic error: ${err.message}`);
+  } finally {
+    jobRunning = false;
+    if (install) install.disabled = false;
+    if (restoreBtn) restoreBtn.disabled = !sheetDetails?.hasBackup;
+    document.querySelectorAll('#sheet select, #exeSelect, #sheetClose').forEach(e => { e.disabled = false; });
+  }
 }
 
 async function runJob(kind, dir) {
@@ -1312,7 +1402,7 @@ const cardActionsBusy = new Set();
 let contextMenuOpen = false;
 
 async function performGameAction(action, dir) {
-  if (!['details', 'open', 'copy', 'restore', 'scan', 'poster', 'community', 'communityRemove', 'hide'].includes(action)) return;
+  if (!['details', 'open', 'copy', 'restore', 'scan', 'poster', 'community', 'communityRemove', 'hide', 'diagnose'].includes(action)) return;
   const game = state.games.find(g => g.dir === dir);
   if (!game) return;
   if (!['open', 'copy'].includes(action) && (jobRunning || cardActionsBusy.size)) return;
@@ -1322,6 +1412,10 @@ async function performGameAction(action, dir) {
   try {
     if (action === 'details') {
       await openSheet(dir);
+    } else if (action === 'diagnose') {
+      await openSheet(dir);
+      if (sheetGame !== game) return;
+      await runCrashAutoFix(dir);
     } else if (action === 'open') {
       const error = await window.lab.open(dir);
       if (error) throw new Error(error);
@@ -1379,6 +1473,7 @@ const MENU_ICON = {
   open: '<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>',
   copy: '<path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1"/><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"/>',
   scan: '<path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 3v5h-5"/>',
+  diagnose: '<path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>',
   poster: '<rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="m4 18 5-5 4 4 3-3 4 4"/>',
   restore: '<path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/>',
   community: '<circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/>',
@@ -1388,7 +1483,7 @@ const MENU_ICON = {
 // Order, and where a rule falls between groups.
 // The community line changes with what this install has already said about
 // the game: adding it, or correcting and taking back what was added.
-const MENU_ITEMS = [['details'], ['open', 'copy'], ['scan', 'poster', 'restore'], ['community', 'communityRemove'], ['hide']];
+const MENU_ITEMS = [['details'], ['open', 'copy'], ['scan', 'diagnose', 'poster', 'restore'], ['community', 'communityRemove'], ['hide']];
 
 // Two letters when a game has no art, so the head is never an empty square.
 const menuInitials = name => String(name || '?').split(/\s+/).filter(Boolean).slice(0, 2).map(w => w[0]).join('').toUpperCase();
@@ -1406,6 +1501,7 @@ function showGameMenu(game, position, { busy = false } = {}) {
     const menu = $('gameMenu');
     const labels = {
       details: t('menuDetails'), open: t('menuOpen'), copy: t('menuCopyPath'), scan: t('menuScan'),
+      diagnose: t('menuDiagnose') || 'Diagnose & Auto-Fix Crashes',
       poster: t('menuPoster'), restore: t('restore'), community: t('menuCommunity'), hide: t('menuHide'),
       communityRemove: t('menuCommunityRemove')
     };

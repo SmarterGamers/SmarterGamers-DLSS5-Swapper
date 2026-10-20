@@ -23,6 +23,8 @@ contextBridge.exposeInMainWorld('lab', {
   history: () => ipcRenderer.invoke('history'),
   copyText: (text) => ipcRenderer.invoke('copy-text', text),
   saveDiagnostics: (dir, activity) => ipcRenderer.invoke('save-diagnostics', dir, activity),
+  diagnoseGameCrashes: (dir) => ipcRenderer.invoke('diagnose-game-crashes', dir),
+  optimizeGameProfile: (dir, options) => ipcRenderer.invoke('optimize-game-profile', dir, options),
   gameMenu: (dir, options) => ipcRenderer.invoke('game-menu', dir, options),
   communityProfile: () => ipcRenderer.invoke('community-profile'),
   communitySaveProfile: (profile) => ipcRenderer.invoke('community-profile-save', profile),

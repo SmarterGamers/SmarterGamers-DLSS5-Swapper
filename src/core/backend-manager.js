@@ -21,7 +21,7 @@ function profileFile(gameDir, exePath, api, route) {
   // The profile file is named after the route, so this list is what decides
   // whether a route can keep its own settings at all - and a route missing
   // from it fails the install with nothing but "Invalid route".
-  if (!['native', 'feeder', 'optiscaler', 'renodx'].includes(route)) throw new Error('Invalid route');
+  if (!['native', 'feeder', 'optiscaler', 'renodx', 'pure-native'].includes(route)) throw new Error('Invalid route');
   const id = crypto.createHash('sha256').update(`${path.relative(gameDir, exePath).toLowerCase()}|${api}`).digest('hex').slice(0, 24);
   return journal.safePath(gameDir, `_DLSS5_Backup/.profiles/${id}-${route}.json`);
 }
@@ -32,6 +32,7 @@ function profileFile(gameDir, exePath, api, route) {
 const CONFIG_FILE = /\.(ini|cfg|txt)$/i;
 
 function configPaths(gameDir, exePath, route) {
+  if (route === 'pure-native') return [];
   const dir = path.dirname(exePath);
   if (route === 'optiscaler') return [path.join(dir, 'OptiScaler.ini')];
   const reshade = path.join(dir, 'ReShade.ini');
