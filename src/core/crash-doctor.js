@@ -174,8 +174,17 @@ function findCrashDumps(gameDir, exePath) {
     } catch {}
   }
 
-  // Sort most recent first
-  return dumps.sort((a, b) => b.mtime - a.mtime);
+  // Sort most recent first, prioritizing rich parsed XML dumps over raw companion dumps
+  return dumps.sort((a, b) => {
+    const timeDiff = b.mtime.getTime() - a.mtime.getTime();
+    if (Math.abs(timeDiff) < 15000) {
+      const aRich = Boolean(a.deviceRemovedReasonCode || a.engineVersion);
+      const bRich = Boolean(b.deviceRemovedReasonCode || b.engineVersion);
+      if (bRich && !aRich) return 1;
+      if (aRich && !bRich) return -1;
+    }
+    return timeDiff;
+  });
 }
 
 /**
@@ -248,7 +257,7 @@ function diagnoseGame(gameDir, exePath) {
 
   const exeDir = exePath ? path.dirname(exePath) : gameDir;
   const dumps = findCrashDumps(gameDir, exePath);
-  const latestDump = dumps[0] || null;
+  const latestDump = dumps.find(d => d.deviceRemovedReasonCode || d.engineVersion) || dumps[0] || null;
 
   let manifest = null;
   const manifestPath = path.join(gameDir, '_DLSS5_Backup', 'manifest.json');

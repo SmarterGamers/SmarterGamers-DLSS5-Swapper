@@ -12,6 +12,7 @@
   function optiReason(target, api = target && target.api) {
     if (!target || target.bitness !== 64 || target.emulator) return 'optiUnsupported';
     if (!['dxgi', 'vulkan'].includes(api) || target.apiLabel === 'DirectX 10') return 'optiUnsupported';
+    if (target.hasAgilitySdk) return 'optiAgilityIncompatible';
     if (!target.hasNativeDlss) return 'optiNeedsDlss';
     return null;
   }
@@ -34,6 +35,9 @@
       return list;
     }
     if (api !== 'dxgi') return [];
+    if (target.hasAgilitySdk && target.hasNativeDlss) {
+      return ['pure-native'];
+    }
     const routes = target.bitness === 32 || target.emulator || target.apiLabel !== 'DirectX 12' ? ['feeder'] : ['native', 'feeder'];
     if (target.hasNativeDlss) routes.unshift('pure-native');
     if (!optiReason(target, api)) routes.push('optiscaler');

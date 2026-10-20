@@ -643,6 +643,15 @@ async function scanGame(gameDir) {
 
   const chosen = exeCandidates[0] || null;
   const primaryDlss = selectPrimaryDlss(dlssFiles, chosen);
+
+  const exeDir = chosen ? path.dirname(chosen.path) : gameDir;
+  const hasAgilitySdk = Boolean(
+    (exeDir && (fs.existsSync(path.join(exeDir, 'D3D12', 'x64', 'D3D12Core.dll')) ||
+                fs.existsSync(path.join(exeDir, 'D3D12Core.dll')))) ||
+    fs.existsSync(path.join(gameDir, 'D3D12Core.dll'))
+  );
+  if (chosen) chosen.hasAgilitySdk = hasAgilitySdk;
+  for (const cand of exeCandidates) cand.hasAgilitySdk = hasAgilitySdk;
   // When nothing turned up, say which kind of folder this actually is instead
   // of leaving the user to guess.
   let emptyReason = null;
@@ -706,6 +715,7 @@ async function scanGame(gameDir) {
     gameName: path.basename(gameDir),
     exeCandidates,
     chosen,
+    hasAgilitySdk,
     emulator: chosen ? chosen.emulator : null,
     dlssFiles,
     primaryDlss,

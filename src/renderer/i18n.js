@@ -40,6 +40,7 @@ const S = {
     optiVulkanHint: 'Vulkan backend changes require Restore originals first. A global ReShade Vulkan layer must not be active; other games’ layer registrations are never disabled automatically.',
     optiUnsupported: 'OptiScaler DLSS-NR is offered only for 64-bit DX11/DX12/Vulkan games, not DX8/DX9, OpenGL or emulators.',
     optiNeedsDlss: 'OptiScaler needs the game’s original DLSS pipeline. No original DLSS DLL was found; copied/injected DLLs alone do not qualify.',
+    optiAgilityIncompatible: 'Incompatible with DirectX 12 Agility SDK (proxy hook causes GPU hang). Use Pure Native DLSS.',
     errOptiHardware: 'This OptiScaler DLSS-NR build requires an RTX 50 series GPU and NVIDIA driver 616.56 or newer.',
     errOptiVulkanLayer: 'A global ReShade Vulkan layer is active. Restore its managed Vulkan installs first; the app will not disable it for other games.',
     errBackendVulkanSwitch: 'For Vulkan, use Restore originals before installing the other backend. Settings are saved for the next installation.',

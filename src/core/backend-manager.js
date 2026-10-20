@@ -128,6 +128,17 @@ async function install(config, log = () => {}) {
       await saveProfile(config.gameDir, old);
       await core.restoreFiles(config.gameDir, old, log);
     }
+    if (config.route !== 'pure-native') {
+      const exeDir = config.exePath ? path.dirname(config.exePath) : config.gameDir;
+      const hasAgility = Boolean(
+        (exeDir && (fs.existsSync(path.join(exeDir, 'D3D12', 'x64', 'D3D12Core.dll')) ||
+                    fs.existsSync(path.join(exeDir, 'D3D12Core.dll')))) ||
+        fs.existsSync(path.join(config.gameDir, 'D3D12Core.dll'))
+      );
+      if (hasAgility) {
+        throw new Error('This game uses DirectX 12 Agility SDK (D3D12Core.dll). Proxy hooks (OptiScaler, ReShade, Feeder) cause DXGI command queue deadlocks. Only Pure Native DLSS mode is permitted.');
+      }
+    }
     if (config.route !== 'optiscaler') compatibility.assertLoaderCompatible(config, changed ? null : old);
     const profile = changed || !old ? loadProfile(config) : {};
     if (config.route !== 'optiscaler' && Object.keys(profile).length) {
