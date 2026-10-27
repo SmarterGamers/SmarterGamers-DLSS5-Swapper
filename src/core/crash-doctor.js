@@ -193,8 +193,11 @@ function findCrashDumps(gameDir, exePath) {
 function findAgilitySdk(gameDir, exeDir) {
   const checkPaths = [
     path.join(exeDir, 'D3D12', 'x64', 'D3D12Core.dll'),
+    path.join(exeDir, 'D3D12', 'D3D12Core.dll'),
     path.join(exeDir, 'D3D12Core.dll'),
-    path.join(gameDir, 'D3D12Core.dll')
+    path.join(gameDir, 'D3D12Core.dll'),
+    path.join(gameDir, 'D3D12', 'D3D12Core.dll'),
+    path.join(gameDir, 'D3D12', 'x64', 'D3D12Core.dll')
   ];
 
   for (const p of checkPaths) {
@@ -218,18 +221,32 @@ function findNativeDlssPlugin(gameDir) {
     if (fs.existsSync(p)) return p;
   }
 
-  // General recursive search in Plugins/ for nvngx_dlss.dll
+  // Recursive search in Plugins or subdirectories for nvngx_dlss.dll
   try {
+    const skipDirs = new Set(['.git', 'node_modules', '_dlss5_backup', 'saved', 'intermediate', 'deriveddatacache']);
     const findInDir = (dir, depth = 0) => {
       if (depth > 6) return null;
-      const entries = fs.readdirSync(dir, { withFileTypes: true });
+      let entries;
+      try {
+        entries = fs.readdirSync(dir, { withFileTypes: true });
+      } catch {
+        return null;
+      }
       for (const e of entries) {
-        const full = path.join(dir, e.name);
-        if (e.isDirectory() && /^(plugins|external|nvidia|dlss|thirdparty|binaries|win64)$/i.test(e.name)) {
-          const res = findInDir(full, depth + 1);
+        if (e.isFile() && /^nvngx_dlss\.dll$/i.test(e.name)) {
+          return path.join(dir, e.name);
+        }
+      }
+      for (const e of entries) {
+        if (!e.isDirectory()) continue;
+        const lower = e.name.toLowerCase();
+        if (skipDirs.has(lower)) continue;
+        const matchesStructure = depth === 0 ||
+          /(plugins|external|nvidia|dlss|streamline|thirdparty|binaries|win64|engine|marketplace)/i.test(e.name) ||
+          e.name.toLowerCase() === path.basename(gameDir).toLowerCase();
+        if (matchesStructure) {
+          const res = findInDir(path.join(dir, e.name), depth + 1);
           if (res) return res;
-        } else if (e.isFile() && /^nvngx_dlss\.dll$/i.test(e.name)) {
-          return full;
         }
       }
       return null;
@@ -369,7 +386,9 @@ function diagnoseGame(gameDir, exePath) {
   }
 
   const hasCrash = Boolean(latestDump || rootCauses.length > 0);
-  const errorCode = latestDump?.deviceRemovedReasonCode || (latestDump?.deviceRemovedReason ? '0x887A0006' : null);
+  const errorCode = latestDump?.deviceRemovedReasonCode ||
+    (latestDump?.deviceRemovedReason ? '0x887A0006' : null) ||
+    ((latestDump?.isStuck || latestDump?.crashType === 'GPUCrash') ? '0x887A0006' : null);
   const errorInfo = errorCode ? CRASH_CODES[errorCode] : null;
 
   return {
@@ -390,7 +409,7 @@ function diagnoseGame(gameDir, exePath) {
       isStuck: latestDump.isStuck,
       stuckThreadId: latestDump.stuckThreadId
     } : null,
-    errorCode: errorCode ? `${errorCode} (${errorInfo ? errorInfo.name : latestDump?.deviceRemovedReason})` : null,
+    errorCode: errorCode ? `${errorCode} (${errorInfo ? errorInfo.name : (latestDump?.deviceRemovedReason || 'DXGI_ERROR_DEVICE_HUNG')})` : null,
     errorDescription: errorInfo?.description || latestDump?.errorMessage || null,
     engine: latestDump?.engineVersion ? `Unreal Engine ${latestDump.engineVersion.split('-')[0]}` : (agilitySdkPath ? 'Unreal Engine (D3D12 Agility SDK)' : null),
     gpu: latestDump?.gpuBrand || null,

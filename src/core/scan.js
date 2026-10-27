@@ -647,8 +647,11 @@ async function scanGame(gameDir) {
   const exeDir = chosen ? path.dirname(chosen.path) : gameDir;
   const hasAgilitySdk = Boolean(
     (exeDir && (fs.existsSync(path.join(exeDir, 'D3D12', 'x64', 'D3D12Core.dll')) ||
+                fs.existsSync(path.join(exeDir, 'D3D12', 'D3D12Core.dll')) ||
                 fs.existsSync(path.join(exeDir, 'D3D12Core.dll')))) ||
-    fs.existsSync(path.join(gameDir, 'D3D12Core.dll'))
+    fs.existsSync(path.join(gameDir, 'D3D12Core.dll')) ||
+    fs.existsSync(path.join(gameDir, 'D3D12', 'D3D12Core.dll')) ||
+    fs.existsSync(path.join(gameDir, 'D3D12', 'x64', 'D3D12Core.dll'))
   );
   if (chosen) chosen.hasAgilitySdk = hasAgilitySdk;
   for (const cand of exeCandidates) cand.hasAgilitySdk = hasAgilitySdk;
@@ -701,6 +704,9 @@ async function scanGame(gameDir) {
   if (!fs.existsSync(activeManifest)) {
     try { recoverable = require('./apply').recoverableManifest(gameDir); } catch {}
   }
+  const hasNativeDlss = Boolean(primaryDlss && (!install || !install.added || !install.added.some(item => item.toLowerCase() === primaryDlss.rel.toLowerCase())));
+  if (chosen) chosen.hasNativeDlss = hasNativeDlss;
+  for (const cand of exeCandidates) cand.hasNativeDlss = hasNativeDlss;
   let reshade = chosen ? inspectReShade(path.dirname(chosen.path)) : inspectReShade(gameDir);
   if (!reshade.installed && install && install.vulkanLayer &&
       fs.existsSync(install.vulkanLayer.manifest || '')) {
@@ -716,6 +722,7 @@ async function scanGame(gameDir) {
     exeCandidates,
     chosen,
     hasAgilitySdk,
+    hasNativeDlss,
     emulator: chosen ? chosen.emulator : null,
     dlssFiles,
     primaryDlss,
