@@ -54,7 +54,7 @@ function fromManifests(folders) {
       const match = /^manifest\.json(\.done(?:-(\d+))?)?$/.exec(file.name);
       if (!match || !file.isFile()) continue;
       try {
-        const manifest = JSON.parse(fs.readFileSync(path.join(root, file.name), 'utf8'));
+        const manifest = JSON.parse(fs.readFileSync(path.join(root, file.name), 'utf8').replace(/^\uFEFF/, ''));
         if (manifest?.version !== 1 || !validDate(manifest.date) ||
             !Array.isArray(manifest.replaced) || !Array.isArray(manifest.added)) continue;
         const row = operation(dir, manifest, match[1] ? 'restore' : 'install', name);
@@ -74,7 +74,7 @@ class HistoryStore {
 
   saved() {
     let content;
-    try { content = fs.readFileSync(this.file, 'utf8'); }
+    try { content = fs.readFileSync(this.file, 'utf8').replace(/^\uFEFF/, ''); }
     catch (error) { if (error.code === 'ENOENT') return []; throw error; }
     const rows = new Map();
     for (const line of content.split(/\r?\n/)) {

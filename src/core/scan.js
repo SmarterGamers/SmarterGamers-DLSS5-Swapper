@@ -676,7 +676,7 @@ async function scanGame(gameDir) {
   const activeManifest = path.join(gameDir, '_DLSS5_Backup', 'manifest.json');
   if (fs.existsSync(activeManifest)) {
     try {
-      const data = JSON.parse(fs.readFileSync(activeManifest, 'utf8'));
+      const data = JSON.parse(fs.readFileSync(activeManifest, 'utf8').replace(/^\uFEFF/, ''));
       install = {
         route: data.route || (data.game && data.game.bitness === 32 ? 'feeder' : 'native'),
         api: data.game && data.game.api,

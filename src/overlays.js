@@ -62,7 +62,7 @@ function createOverlayLibrary(root, builtinFile, forbiddenRoots = []) {
   function readJson(file) {
     const stat = fs.lstatSync(file);
     if (!stat.isFile() || stat.isSymbolicLink() || stat.size > 16384) throw Error('Invalid overlay record.');
-    return JSON.parse(fs.readFileSync(file, 'utf8'));
+    return JSON.parse(fs.readFileSync(file, 'utf8').replace(/^\uFEFF/, ''));
   }
   function custom(id) {
     idCheck(id);

@@ -266,7 +266,7 @@ function diagnoseGame(gameDir, exePath) {
     const manifestPath = path.join(gameDir, '_DLSS5_Backup', 'manifest.json');
     if (fs.existsSync(manifestPath)) {
       try {
-        const m = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+        const m = JSON.parse(fs.readFileSync(manifestPath, 'utf8').replace(/^\uFEFF/, ''));
         if (m.game && m.game.exe) exePath = path.join(gameDir, m.game.exe);
       } catch {}
     }
@@ -279,7 +279,7 @@ function diagnoseGame(gameDir, exePath) {
   let manifest = null;
   const manifestPath = path.join(gameDir, '_DLSS5_Backup', 'manifest.json');
   if (fs.existsSync(manifestPath)) {
-    try { manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8')); } catch {}
+    try { manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8').replace(/^\uFEFF/, '')); } catch {}
   }
 
   const agilitySdkPath = findAgilitySdk(gameDir, exeDir);
@@ -438,7 +438,7 @@ async function optimizeGame(gameDir, options = {}) {
 
   if (fs.existsSync(manifestPath)) {
     try {
-      manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+      manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8').replace(/^\uFEFF/, ''));
     } catch {}
   }
 

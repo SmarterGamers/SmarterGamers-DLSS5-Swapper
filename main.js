@@ -248,7 +248,7 @@ let liveState = null;
 
 function readState() {
   try {
-    const value = JSON.parse(fs.readFileSync(stateFile(), 'utf8'));
+    const value = JSON.parse(fs.readFileSync(stateFile(), 'utf8').replace(/^\uFEFF/, ''));
     if (value && typeof value === 'object' && !Array.isArray(value)) return value;
   } catch { /* absent or unreadable: start from the defaults below */ }
   // Nothing seeded: the drive sweep finds game libraries on its own, and a
@@ -1054,7 +1054,7 @@ function repairReadOnlyConfigs(games) {
   setImmediate(async () => {
     for (const game of games) {
       try {
-        const manifest = JSON.parse(fs.readFileSync(path.join(game.dir, '_DLSS5_Backup', 'manifest.json'), 'utf8'));
+        const manifest = JSON.parse(fs.readFileSync(path.join(game.dir, '_DLSS5_Backup', 'manifest.json'), 'utf8').replace(/^\uFEFF/, ''));
         const exe = manifest && manifest.game && manifest.game.exe;
         if (typeof exe !== 'string' || !exe) continue;
         const exeDir = path.dirname(path.resolve(game.dir, exe));
@@ -1743,6 +1743,17 @@ async function exclusiveMutation(work) {
 ipcMain.handle('install', (event, dir, exePath, requestedRoute, requestedApi) => exclusiveMutation(async () => {
   const p = payload();
   if (!p) return { ok: false, ...payloadMissing() };
+
+  // Pre-flight auto-optimization pass: auto-diagnose and optimize profile conflicts prior to applying
+  try {
+    const preDiag = crashDoctor.diagnoseGame(dir);
+    if (preDiag && (preDiag.canAutoFix || (preDiag.conflictingFiles && preDiag.conflictingFiles.length > 0) || preDiag.hasAgilityConflict || preDiag.hasAddonConflict)) {
+      await crashDoctor.optimizeGame(dir);
+    }
+  } catch (optErr) {
+    console.warn('[PreFlight Auto-Optimizer]', optErr);
+  }
+
   const scan = await scanGame(dir);
   if (!scan.chosen) return { ok: false, message: 'No game executable found' };
 

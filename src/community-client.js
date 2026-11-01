@@ -23,7 +23,7 @@ class CommunityClient {
 
   load() {
     if (this.state) return this.state;
-    try { this.state = validState(JSON.parse(fs.readFileSync(this.file, 'utf8'))); }
+    try { this.state = validState(JSON.parse(fs.readFileSync(this.file, 'utf8').replace(/^\uFEFF/, ''))); }
     catch { this.state = {}; }
     if (!/^[A-Za-z0-9_-]{16,64}$/.test(this.state.installId || '')) {
       this.state.installId = crypto.randomBytes(24).toString('base64url');

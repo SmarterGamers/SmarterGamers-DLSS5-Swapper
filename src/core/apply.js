@@ -40,7 +40,7 @@ function beginManifest(gameDir, exePath, api) {
   let previous = null;
   if (fs.existsSync(manifestPath)) {
     try {
-      previous = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+      previous = JSON.parse(fs.readFileSync(manifestPath, 'utf8').replace(/^\uFEFF/, ''));
     } catch {
       throw fail('errBackupInvalid');
     }
@@ -1085,7 +1085,7 @@ function stillInstalled(gameDir, manifest) {
 function recoverableManifest(gameDir) {
   for (const entry of retiredManifests(gameDir)) {
     let manifest = null;
-    try { manifest = JSON.parse(fs.readFileSync(entry.path, 'utf8')); } catch { continue; }
+    try { manifest = JSON.parse(fs.readFileSync(entry.path, 'utf8').replace(/^\uFEFF/, '')); } catch { continue; }
     if (!manifest || manifest.version !== 1 || !Array.isArray(manifest.added) || !Array.isArray(manifest.replaced)) continue;
     if (stillInstalled(gameDir, manifest)) return { ...entry, manifest };
   }
@@ -1097,7 +1097,7 @@ async function restore(gameDir, onLog) {
   let manifestPath = path.join(backupRoot(gameDir), MANIFEST);
   let manifest = null;
   if (fs.existsSync(manifestPath)) {
-    manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+    manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8').replace(/^\uFEFF/, ''));
   } else {
     const recovered = recoverableManifest(gameDir);
     if (!recovered) throw fail('errNoBackup');

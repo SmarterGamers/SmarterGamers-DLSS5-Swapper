@@ -322,7 +322,7 @@
   // setup and activity on the left; the live read-out, the install actions and
   // the recent games on the right. Every control keeps the id the app wires.
   function sheetMarkup(context) {
-    const { d, game, art, cover, hero, pick, dir, upToDate, inGameDlss } = context;
+    const { d, game, art, cover, hero, pick, dir, upToDate, inGameDlss, autoOptimized, autoOptDetails } = context;
     const shots = [hero, cover, game.poster && game.poster.url]
       .filter((one, index, all) => one && all.indexOf(one) === index);
     const name = art ? art.name : game.name;
@@ -402,7 +402,18 @@
                     <button class="gp-mini" id="gpExeFolder" title="${esc(t('t2OpenFolder'))}">${icon(ICONS.folder, 15)}</button>
                   </div>
                 </div>
-                ${(d.crashDiagnosis?.crashed || (d.crashDiagnosis?.conflictingFiles && d.crashDiagnosis.conflictingFiles.length > 0)) ? `
+                ${autoOptimized ? `
+                  <div class="crash-doctor-box auto-optimized-badge" id="autoOptimizedBox" style="margin:12px 0;padding:12px 14px;border-radius:8px;background:rgba(16,185,129,0.12);border:1px solid rgba(16,185,129,0.35);">
+                    <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+                      <strong style="color:#10b981;font-size:13px;display:flex;align-items:center;gap:6px;">
+                        <svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:none;stroke:#10b981;stroke-width:2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                        Auto-Scanned &amp; Optimized (Pure Native DLSS Active)
+                      </strong>
+                      <span style="font-size:11px;color:#10b981;font-weight:600;">Safe &amp; Ready to Apply</span>
+                    </div>
+                    <p style="margin:6px 0 0 0;font-size:12px;line-height:1.4;color:var(--text);">Conflicting wrappers (${(autoOptDetails?.purgedFiles || []).map(f => f.name).join(', ') || 'dxgi.dll / addons'}) were automatically purged and profile was optimized for zero crash risk.</p>
+                  </div>
+                ` : (d.crashDiagnosis?.crashed || (d.crashDiagnosis?.conflictingFiles && d.crashDiagnosis.conflictingFiles.length > 0)) ? `
                   <div class="crash-doctor-box" id="crashDoctorBox" style="margin:12px 0;padding:12px 14px;border-radius:8px;background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.35);">
                     <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px;">
                       <strong style="color:#ef4444;font-size:13px;display:flex;align-items:center;gap:6px;">

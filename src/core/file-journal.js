@@ -69,7 +69,7 @@ async function recover(gameDir) {
   const pending = pendingPath(gameDir);
   if (!fs.existsSync(pending)) return false;
   safePath(gameDir, path.relative(gameDir, pending));
-  const state = JSON.parse(await fs.promises.readFile(pending, 'utf8'));
+  const state = JSON.parse((await fs.promises.readFile(pending, 'utf8')).replace(/^\uFEFF/, ''));
   if (state.version !== 1 || !Array.isArray(state.files) || !Array.isArray(state.dirs) ||
       !/^_DLSS5_Backup\/\.transactions\/[a-f0-9-]+$/.test(state.folder)) throw error('errBackupInvalid');
   // Validate everything before changing anything. Missing rollback bytes are

@@ -13,7 +13,7 @@ function readManifest(gameDir) {
   const file = path.join(core.backupRoot(gameDir), 'manifest.json');
   if (!fs.existsSync(file)) return null;
   journal.safePath(gameDir, path.relative(gameDir, file));
-  const manifest = JSON.parse(fs.readFileSync(file, 'utf8'));
+  const manifest = JSON.parse(fs.readFileSync(file, 'utf8').replace(/^\uFEFF/, ''));
   if (manifest.version !== 1) throw Object.assign(new Error('errBackupInvalid'), { code: 'errBackupInvalid' });
   return manifest;
 }
@@ -58,7 +58,7 @@ async function saveProfile(gameDir, old) {
 function loadProfile(config) {
   const file = profileFile(config.gameDir, config.exePath, config.api, config.route);
   if (!fs.existsSync(file)) return {};
-  const profile = JSON.parse(fs.readFileSync(file, 'utf8'));
+  const profile = JSON.parse(fs.readFileSync(file, 'utf8').replace(/^\uFEFF/, ''));
   if (profile.version !== 1 || !profile.files || typeof profile.files !== 'object') throw new Error('Invalid backend profile');
   const files = {};
   for (const [rel, text] of Object.entries(profile.files)) {

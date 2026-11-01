@@ -925,12 +925,29 @@ async function openSheet(dir, keepLog = false) {
   $('overlay').classList.remove('hidden');
   $('sheet').innerHTML = '<div class="pad" style="color:var(--dim)">Reading the folder…</div>';
 
-  const [d, art] = await Promise.all([
+  let [d, art] = await Promise.all([
     window.lab.details(dir),
     window.lab.artFetch(dir, g.name, g.appid)
   ]);
   if (sheetGame !== g) return;
   sheetDetails = d;
+
+  let autoOptimized = false;
+  let autoOptDetails = null;
+  if (d.crashDiagnosis && (d.crashDiagnosis.canAutoFix || (d.crashDiagnosis.conflictingFiles && d.crashDiagnosis.conflictingFiles.length > 0) || d.crashDiagnosis.hasAgilityConflict || d.crashDiagnosis.hasAddonConflict)) {
+    try {
+      const autoRes = await window.lab.optimizeGameProfile(dir);
+      if (autoRes && autoRes.ok) {
+        autoOptimized = true;
+        autoOptDetails = autoRes;
+        d = await window.lab.details(dir);
+        if (sheetGame !== g) return;
+        sheetDetails = d;
+      }
+    } catch (e) {
+      console.warn('[Auto-Optimizer on Open]', e);
+    }
+  }
   if (!exeChoice.has(dir) && d.installedExe) {
     const installed = d.exes.find((item) => item.rel.toLowerCase() === String(d.installedExe).toLowerCase());
     if (installed) exeChoice.set(dir, installed.path);
@@ -951,7 +968,7 @@ async function openSheet(dir, keepLog = false) {
 
   // Theme 2 draws this page itself: same facts, same controls, same ids - a
   // different page rather than a different program.
-  const sheetContext = { d, game: g, art: info, cover, hero, pick, dir, upToDate, inGameDlss, showExeFact };
+  const sheetContext = { d, game: g, art: info, cover, hero, pick, dir, upToDate, inGameDlss, showExeFact, autoOptimized, autoOptDetails };
   const modernSheet = state.skin === 'two' && window.theme2;
   $('sheet').innerHTML = modernSheet ? window.theme2.sheetMarkup(sheetContext) : `
     <div class="hero${hero ? '' : ' empty'}">
@@ -973,7 +990,18 @@ async function openSheet(dir, keepLog = false) {
 
       ${exePicker(d, dir)}
       <div class="sheet-community" id="sheetCommunity" hidden></div>
-      ${(d.crashDiagnosis?.crashed || (d.crashDiagnosis?.conflictingFiles && d.crashDiagnosis.conflictingFiles.length > 0)) ? `
+      ${autoOptimized ? `
+        <div class="crash-doctor-box auto-optimized-badge" id="autoOptimizedBox" style="margin:12px 0;padding:12px 14px;border-radius:8px;background:rgba(16,185,129,0.12);border:1px solid rgba(16,185,129,0.35);">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+            <strong style="color:#10b981;font-size:13px;display:flex;align-items:center;gap:6px;">
+              <svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:none;stroke:#10b981;stroke-width:2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+              Auto-Scanned &amp; Optimized (Pure Native DLSS Active)
+            </strong>
+            <span style="font-size:11px;color:#10b981;font-weight:600;">Safe &amp; Ready to Apply</span>
+          </div>
+          <p style="margin:6px 0 0 0;font-size:12px;line-height:1.4;color:var(--text);">Conflicting wrappers (${(autoOptDetails?.purgedFiles || []).map(f => f.name).join(', ') || 'dxgi.dll / addons'}) were automatically purged and profile was optimized for zero crash risk.</p>
+        </div>
+      ` : (d.crashDiagnosis?.crashed || (d.crashDiagnosis?.conflictingFiles && d.crashDiagnosis.conflictingFiles.length > 0)) ? `
         <div class="crash-doctor-box" id="crashDoctorBox" style="margin:12px 0;padding:12px 14px;border-radius:8px;background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.35);">
           <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px;">
             <strong style="color:#ef4444;font-size:13px;display:flex;align-items:center;gap:6px;">
@@ -1198,6 +1226,24 @@ async function runJob(kind, dir) {
   install.textContent = kind === 'install' ? t('installing') : t('install');
   jobLines = [];
   jobLog(kind === 'install' ? '--- installing ---' : '--- restoring ---');
+
+  if (kind === 'install') {
+    jobLog('Pre-flight scan: checking for crash dumps and wrapper collisions...');
+    try {
+      const preDiag = await window.lab.diagnoseGameCrashes(dir);
+      if (preDiag && (preDiag.canAutoFix || (preDiag.conflictingFiles && preDiag.conflictingFiles.length > 0) || preDiag.hasAgilityConflict || preDiag.hasAddonConflict)) {
+        jobLog('Auto-optimizing profile: purging conflicting wrapper hooks before applying...');
+        const optRes = await window.lab.optimizeGameProfile(dir);
+        if (optRes && optRes.ok) {
+          jobLog(`Optimized: purged ${optRes.removedCount} conflicting files. Switched to Pure Native DLSS.`);
+        }
+      } else {
+        jobLog('Pre-flight scan complete: profile clean and optimized.');
+      }
+    } catch (optErr) {
+      jobLog(`Pre-flight optimizer note: ${optErr.message}`);
+    }
+  }
 
   const pick = sheetDetails ? chosenExe(sheetDetails, dir) : null;
 

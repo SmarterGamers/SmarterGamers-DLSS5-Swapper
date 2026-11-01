@@ -20,7 +20,7 @@ function defaultRunner(file, args) {
 
 function readUsers(dir) {
   try {
-    const data = JSON.parse(fs.readFileSync(path.join(dir, 'installs.json'), 'utf8'));
+    const data = JSON.parse(fs.readFileSync(path.join(dir, 'installs.json'), 'utf8').replace(/^\uFEFF/, ''));
     return Array.isArray(data.games) ? data.games.filter((item) => typeof item === 'string') : [];
   } catch {
     return [];
@@ -63,7 +63,7 @@ async function register(options) {
   }
   for (const manifestName of names.filter((name) => name.endsWith('.json'))) {
     const file = path.join(targetDir, manifestName);
-    const data = JSON.parse(await fs.promises.readFile(file, 'utf8'));
+    const data = JSON.parse((await fs.promises.readFile(file, 'utf8')).replace(/^\uFEFF/, ''));
     data.layer = data.layer || {};
     data.layer.library_path = `.\\${manifestName.replace(/\.json$/i, '.dll')}`;
     await fs.promises.writeFile(file, JSON.stringify(data, null, 2), 'utf8');

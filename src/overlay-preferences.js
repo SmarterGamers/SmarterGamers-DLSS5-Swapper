@@ -17,7 +17,7 @@ function validate(v){
   const custom=v.custom?{accent:v.custom.accent.toLowerCase(),name:v.custom.name.trim()}:null;
   return {enabled:v.enabled,theme:v.theme,hotkey:{key:v.hotkey.key,mods:v.hotkey.mods},custom};
 }
-function read(dir){const file=path.join(dir,'overlay-preferences.json');return fs.existsSync(file)?validate(JSON.parse(fs.readFileSync(file,'utf8'))):defaults();}
+function read(dir){const file=path.join(dir,'overlay-preferences.json');return fs.existsSync(file)?validate(JSON.parse(fs.readFileSync(file,'utf8').replace(/^\uFEFF/, ''))):defaults();}
 function save(dir,patch){
   if(!patch||Object.keys(patch).some(k=>!['enabled','theme','hotkey','custom'].includes(k)))throw Error('Invalid overlay preference');
   const value=validate({...read(dir),...patch}),file=path.join(dir,'overlay-preferences.json'),temp=file+'.tmp';

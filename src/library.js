@@ -137,7 +137,7 @@ function epic() {
   const games = [];
   for (const f of files) {
     try {
-      const j = JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8'));
+      const j = JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8').replace(/^\uFEFF/, ''));
       // A manifest survives an uninstall, so the folder has to be checked.
       if (!j.InstallLocation || !fs.existsSync(j.InstallLocation)) continue;
       if (NOT_A_GAME.test(j.DisplayName || '')) continue;
