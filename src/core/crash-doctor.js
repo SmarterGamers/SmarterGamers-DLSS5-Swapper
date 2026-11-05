@@ -452,6 +452,8 @@ async function optimizeGame(gameDir, options = {}) {
     'dxgi.dll',
     'renodx-dlss5.addon64',
     'renodx-dlss.addon64',
+    'dlss5-feed.addon64',
+    'dlss5-feed.cfg',
     'nvngx_dlssnr.dll',
     'ReShade.ini',
     'ReShade.log'
@@ -462,7 +464,7 @@ async function optimizeGame(gameDir, options = {}) {
     try {
       const existing = fs.readdirSync(exeDir);
       for (const f of existing) {
-        if (/^dlss5-lab-overlay.*\.addon64$/i.test(f) || /^renodx.*\.addon64$/i.test(f)) {
+        if (/^dlss5-lab-overlay.*\.addon64$/i.test(f) || /^renodx.*\.addon64$/i.test(f) || /^dlss5-feed.*\.addon64$/i.test(f)) {
           if (!filesToPurge.includes(f)) filesToPurge.push(f);
         }
       }
@@ -476,9 +478,23 @@ async function optimizeGame(gameDir, options = {}) {
       try {
         fs.unlinkSync(target);
         const rel = path.relative(gameDir, target);
-        removed.push(rel);
+        if (!removed.includes(rel)) removed.push(rel);
       } catch (err) {
         // EPERM or busy
+      }
+    }
+  }
+
+  // Also purge any conflicting files identified during diagnosis across subdirectories
+  if (diagnosis?.conflictingFiles) {
+    for (const rel of diagnosis.conflictingFiles) {
+      const target = path.isAbsolute(rel) ? rel : path.join(gameDir, rel);
+      if (fs.existsSync(target)) {
+        try {
+          fs.unlinkSync(target);
+          const relPath = path.relative(gameDir, target);
+          if (!removed.includes(relPath)) removed.push(relPath);
+        } catch (err) {}
       }
     }
   }
