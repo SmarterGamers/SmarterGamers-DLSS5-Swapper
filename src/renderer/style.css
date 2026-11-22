@@ -2752,3 +2752,11 @@ body { cursor: default; }
   border-color: color-mix(in srgb, var(--accent) 55%, var(--line));
   background: color-mix(in srgb, var(--accent) 12%, transparent);
 }
+
+/* ---------------- cloud gaming ---------------- */
+.cloud-mark { display: inline-block; width: 1.1em; text-align: center; font-weight: 700; opacity: .75; }
+.cloud-mark.on { color: #22c55e; opacity: 1; }
+.cloud-mark.off { color: #ef4444; opacity: 1; }
+#view-cloud .cloud-browser .row { gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+#cloudMessage:empty { display: none; }
+#cloudMessage .glass-btn { margin-left: 6px; }

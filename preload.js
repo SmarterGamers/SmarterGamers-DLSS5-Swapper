@@ -15,6 +15,11 @@ contextBridge.exposeInMainWorld('lab', {
   checkUpdate: () => ipcRenderer.invoke('update-check'),
   unhide: (dir) => ipcRenderer.invoke('unhide', dir),
   boot: () => ipcRenderer.invoke('boot'),
+  // ---- cloud gaming / browser mode ----
+  cloudStatus: () => ipcRenderer.invoke('cloud-status'),
+  cloudApply: (id, options) => ipcRenderer.invoke('cloud-apply', id, options),
+  cloudOpen: (id) => ipcRenderer.invoke('cloud-open', id),
+  cloudOpenNvidia: () => ipcRenderer.invoke('cloud-open-nvidia'),
   setLang: (lang) => ipcRenderer.invoke('set-lang', lang),
   setTheme: (theme) => ipcRenderer.invoke('set-theme', theme),
   window: (action) => ipcRenderer.invoke('window', action),

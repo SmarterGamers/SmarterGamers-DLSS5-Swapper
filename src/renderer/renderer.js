@@ -83,6 +83,7 @@ function show(view) {
   if (view === 'overlays') window.overlayLab.render();
   if (view === 'community') window.communityUi.render();
   if (view === 'chat') window.chatUi?.render?.();
+  if (view === 'cloud') window.cloudModeUi?.render?.();
 }
 
 for (const link of document.querySelectorAll('[data-project]')) {
@@ -821,7 +822,14 @@ function installOptions(d, pick, dir) {
     <option value="auto"${!pick.apiOverride || pick.apiOverride === 'auto' ? ' selected' : ''}>${esc(t('apiAutomatic', pick.apiLabel || t('unknownApi')))}</option>
     ${window.renderingApi.choices.map(item => `<option value="${item.value}"${pick.apiOverride === item.value ? ' selected' : ''}>${item.label}</option>`).join('')}
     </select></label>`;
-  const apiHint = `<div class="emu-note" id="apiHint"><span>${t('apiOverrideHint')}</span>${api.api === 'vulkan' && !opti ? `<span>${t('apiVulkanHint')}</span>` : ''}</div>`;
+  // The DirectX 11 / 12 choice travels with Play where the engine takes it on
+  // the command line; say which of the three cases this game is.
+  const launchInfo = pick.launchSwitch || { supported: false, args: {} };
+  const launchChoice = pick.apiOverride === 'd3d11' || pick.apiOverride === 'd3d12' ? pick.apiOverride : null;
+  const launchHint = launchChoice
+    ? `<span>${launchInfo.supported ? esc(t('launchSwitchOn', (launchInfo.args[launchChoice] || []).join(' '))) : esc(t(launchInfo.reason || 'launchSwitchUnsupported'))}</span>`
+    : (launchInfo.supported ? `<span>${esc(t('launchSwitchAvailable'))}</span>` : '');
+  const apiHint = `<div class="emu-note" id="apiHint"><span>${t('apiOverrideHint')}</span>${launchHint}${api.api === 'vulkan' && !opti ? `<span>${t('apiVulkanHint')}</span>` : ''}</div>`;
   // Keep the picker available even when automatic detection yields DX10 or an
   // unsupported renderer. Otherwise the user cannot correct that detection.
   if (!routes.length) return `<div class="install-options" data-title="${esc(t('sheetSetup'))}">${apiField}</div>${notesBox([apiHint, `<div class="emu-note">${t('unsupportedRendererHint')}</div>`, warning], Boolean(warning))}`;
@@ -842,7 +850,7 @@ function installOptions(d, pick, dir) {
       ${opti ? `<label><span>${t('fOptiBuild')}</span><select id="optiBuild"></select></label>` : ''}
     </div>
     ${notesBox([
-      `<div class="emu-note" id="apiHint"><span>${t('apiOverrideHint')}</span>${api.api === 'vulkan' && !opti ? `<span>${t('apiVulkanHint')}</span>` : ''}</div>`,
+      `<div class="emu-note" id="apiHint"><span>${t('apiOverrideHint')}</span>${launchHint}${api.api === 'vulkan' && !opti ? `<span>${t('apiVulkanHint')}</span>` : ''}</div>`,
       `<div class="emu-note backend-note" id="backendHint"><span>${t(opti ? 'optiHint' : 'backendHint')}</span>
         ${optiReason ? `<span>${t(optiReason)}</span>` : ''}
         ${route === 'pure-native' ? `<span>${t('routePureNativeHint')}</span>` : ''}

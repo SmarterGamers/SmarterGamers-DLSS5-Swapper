@@ -28,6 +28,9 @@ const gpuModel = require('./src/shared/gpu-model');
 const componentCode = (error, fallback) => (error && error.code === 'componentRemoved' ? 'componentQuarantined' : fallback);
 const installRoutes = require('./src/shared/install-routes');
 const renderingApi = require('./src/shared/rendering-api');
+const launchApi = require('./src/shared/launch-api');
+const launchSwitch = require('./src/core/launch-switch');
+const cloudMode = require('./src/core/cloud-mode');
 const { projectUrl } = require('./src/core/project-links');
 const optiscaler = require('./src/core/optiscaler');
 const { missingPayload } = require('./src/core/payload-guidance');
@@ -518,17 +521,166 @@ ipcMain.handle('set-lang', (_event, lang) => {
 ipcMain.handle('launch-game', async (_event, dir) => {
   if (typeof dir !== 'string' || !path.isAbsolute(dir)) return { ok: false, message: 'errApiChoice' };
   const known = lastGames.find((game) => keyFor(game.dir) === keyFor(dir));
+  // The DirectX 11 / 12 choice on the sheet travels with Play where the engine
+  // takes its renderer on the command line. The folder is only scanned when a
+  // choice exists at all, so an ordinary launch stays the single call it was.
+  let switched = null;
+  let switchExe = null;
+  try {
+    const state = loadState();
+    if (state.apiOverrides && Object.keys(state.apiOverrides).length) {
+      const scan = await scanGame(dir);
+      switchExe = scan.chosen && scan.chosen.path;
+      const choice = switchExe ? apiPreference(state, dir, switchExe) : 'auto';
+      if (launchApi.CHOICES.includes(choice)) {
+        switched = launchApi.plan({
+          engine: launchSwitch.forExe(dir, switchExe).engine,
+          choice,
+          launcher: known && known.launcher,
+          appid: known && known.appid
+        });
+      }
+    }
+  } catch { switched = null; }
+  if (switched && switched.via === 'steam') {
+    await shell.openExternal(switched.url);
+    return { ok: true, via: 'steam', args: switched.args };
+  }
+  if (switched && switched.via === 'exe') {
+    try {
+      const child = require('child_process').spawn(switchExe, switched.args, { cwd: path.dirname(switchExe), detached: true, stdio: 'ignore' });
+      // A missing or blocked executable reports through this event; without a
+      // listener it would take the whole app down.
+      child.on('error', () => {});
+      child.unref();
+      return { ok: true, via: 'exe', args: switched.args };
+    } catch (error) { return { ok: false, message: error.message }; }
+  }
+  // Started the ordinary way. `note` says why a DirectX choice could not go with it.
+  const note = switched && switched.reason ? switched.reason : null;
   if (known && known.appid) {
     await shell.openExternal(`steam://rungameid/${String(known.appid).replace(/[^0-9]/g, '')}`);
-    return { ok: true, via: 'steam' };
+    return { ok: true, via: 'steam', args: [], note };
   }
   try {
     const scan = await scanGame(dir);
     const exe = scan.chosen && scan.chosen.path;
     if (!exe) return { ok: false, message: 'No game executable found' };
     const error = await shell.openPath(exe);
-    return error ? { ok: false, message: error } : { ok: true, via: 'exe' };
+    return error ? { ok: false, message: error } : { ok: true, via: 'exe', args: [], note };
   } catch (error) { return { ok: false, message: error.message }; }
+});
+
+// ---------------- cloud gaming / browser mode ----------------
+// Xbox Cloud Gaming and Remote Play run the game elsewhere, so DLSS has nothing
+// to hook. This screen sets up what does reach a browser stream: hardware
+// acceleration, RTX Video Super Resolution and a Lossless Scaling profile.
+// The rules live in src/core/cloud-mode.js; this part only runs Windows tools.
+function cloudRun(file, args) {
+  return new Promise(resolve => {
+    require('child_process').execFile(file, args, { windowsHide: true, timeout: 10000, maxBuffer: 8 * 1024 * 1024 },
+      (error, stdout) => resolve(String(stdout || (error && error.stdout) || '')));
+  });
+}
+async function cloudRunning() { return cloudMode.runningImages(await cloudRun('tasklist', ['/FO', 'CSV', '/NH'])); }
+async function cloudSteamRoot() {
+  const text = await cloudRun('reg', ['query', 'HKCU\\Software\\Valve\\Steam', '/v', 'SteamPath']);
+  const match = text.match(/SteamPath\s+REG_SZ\s+(.+)/);
+  return match ? path.normalize(match[1].trim()) : null;
+}
+function cloudDisplay() {
+  const { screen } = require('electron');
+  const primary = screen.getPrimaryDisplay();
+  const display = {
+    width: Math.round(primary.size.width * primary.scaleFactor),
+    height: Math.round(primary.size.height * primary.scaleFactor),
+    refreshRate: Math.round(primary.displayFrequency || 60)
+  };
+  return { ...display, target: cloudMode.targetFor(display.refreshRate), flowScale: cloudMode.flowScaleFor(display.height) };
+}
+async function cloudStatus() {
+  const [running, vsrText, steamRoot] = await Promise.all([
+    cloudRunning(),
+    cloudRun('reg', ['query', cloudMode.DISPLAY_CLASS_KEY, '/s', '/f', 'SuperResolution', '/v']),
+    cloudSteamRoot()
+  ]);
+  const losslessExe = cloudMode.losslessExe({ steamRoot });
+  const browsers = Object.values(cloudMode.BROWSERS).map(browser => {
+    const exe = cloudMode.browserExe(browser.id);
+    return {
+      id: browser.id,
+      name: browser.name,
+      installed: Boolean(exe),
+      running: running.has(browser.exe),
+      hardwareAcceleration: cloudMode.hardwareAcceleration(browser.id).enabled,
+      losslessProfile: cloudMode.losslessStatus(browser.id).profile,
+      profileTitle: cloudMode.profileTitle(browser.id)
+    };
+  });
+  return {
+    ok: true,
+    browsers,
+    vsr: cloudMode.parseVsr(vsrText),
+    lossless: { installed: Boolean(losslessExe), exe: losslessExe, running: running.has('losslessscaling.exe') },
+    display: cloudDisplay(),
+    url: cloudMode.CLOUD_URL
+  };
+}
+// Lossless Scaling saves its settings when it closes, so it is asked to close
+// (a normal close, not a kill) and the edit is made after it has exited.
+async function cloudCloseLossless() {
+  await cloudRun('taskkill', ['/IM', 'LosslessScaling.exe']);
+  for (let i = 0; i < 40; i++) {
+    if (!(await cloudRunning()).has('losslessscaling.exe')) return true;
+    await new Promise(r => setTimeout(r, 250));
+  }
+  return false;
+}
+ipcMain.handle('cloud-status', async () => {
+  try { return await cloudStatus(); } catch (error) { return { ok: false, message: error.message }; }
+});
+ipcMain.handle('cloud-apply', async (_event, id, options = {}) => {
+  try {
+    if (!cloudMode.BROWSERS[id]) return { ok: false, reason: 'cloudUnknownBrowser' };
+    const status = await cloudStatus();
+    const browser = status.browsers.find(b => b.id === id);
+    const steps = [];
+    steps.push({ step: 'hardwareAcceleration', ...cloudMode.enableHardwareAcceleration(id, { running: browser.running }) });
+    if (!status.lossless.installed) {
+      steps.push({ step: 'lossless', ok: false, reason: 'cloudLosslessMissing' });
+    } else if (status.lossless.running && !options.restartLossless) {
+      steps.push({ step: 'lossless', ok: false, reason: 'cloudLosslessRunning', canRestart: true });
+    } else {
+      const wasRunning = status.lossless.running;
+      if (wasRunning && !(await cloudCloseLossless())) {
+        steps.push({ step: 'lossless', ok: false, reason: 'cloudLosslessWouldNotClose' });
+      } else {
+        const result = cloudMode.writeLosslessProfile(id, { display: status.display, running: false });
+        steps.push({ step: 'lossless', ...result });
+        // Started again if it was open, after a successful edit so the profile
+        // is ready, or the first time so it creates its settings file.
+        if (wasRunning || result.ok || result.reason === 'cloudLosslessNoSettings') {
+          const child = require('child_process').spawn(status.lossless.exe, [], { cwd: path.dirname(status.lossless.exe), detached: true, stdio: 'ignore' });
+          child.unref();
+        }
+      }
+    }
+    steps.push({ step: 'vsr', ok: status.vsr.enabled === true, ...status.vsr, reason: status.vsr.known ? (status.vsr.enabled ? null : 'cloudVsrOff') : 'cloudVsrUnknown' });
+    return { ok: steps.every(s => s.ok), steps };
+  } catch (error) { return { ok: false, message: error.message }; }
+});
+ipcMain.handle('cloud-open', async (_event, id) => {
+  const exe = cloudMode.browserExe(id);
+  if (!exe) return { ok: false, reason: 'cloudNoBrowser' };
+  const child = require('child_process').spawn(exe, [cloudMode.CLOUD_URL], { detached: true, stdio: 'ignore' });
+  child.unref();
+  return { ok: true };
+});
+ipcMain.handle('cloud-open-nvidia', async () => {
+  const exe = path.join(process.env.ProgramFiles || 'C:\\Program Files', 'NVIDIA Corporation', 'NVIDIA App', 'CEF', 'NVIDIA App.exe');
+  if (!fs.existsSync(exe)) return { ok: false, reason: 'cloudNoNvidiaApp' };
+  const error = await shell.openPath(exe);
+  return { ok: !error };
 });
 ipcMain.handle('set-rail', (_event, rail) => {
   const state = loadState();
@@ -1682,6 +1834,7 @@ ipcMain.handle('details', async (_event, dir) => {
       hasNativeDlss,
       apiOverride: apiPreference(state, dir, e.path),
       reshadeProxy: reshadeProxyPreference(state, dir, e.path),
+      launchSwitch: launchSwitch.forGame(dir, e.path, (lastGames.find((game) => keyFor(game.dir) === keyFor(dir)) || {}).launcher),
       apiChoices: e.apiChoices || [{ api: e.api, label: e.apiLabel }],
       routes: installRoutes.routesFor({ ...e, hasNativeDlss })
     })),

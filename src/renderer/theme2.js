@@ -511,6 +511,8 @@
       try {
         const answer = await window.lab.launchGame(dir);
         if (!answer?.ok) log(answer?.message || t('t2PlayFailed'));
+        else if (answer.args?.length) log(t('launchSwitchUsed', answer.args.join(' ')));
+        else if (answer.note) log(t(answer.note));
       } catch (error) { log(error.message); }
       finally { setTimeout(() => { play.disabled = false; }, 1200); }
     };

@@ -42,6 +42,10 @@
           <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M3 9h18M9 9v12M13 13h4M13 17h4"/></svg>
           <span data-i18n="navOverlay">Overlay</span><i class="dot"></i>
         </button>
+        <button class="nav-item" data-view="cloud">
+          <svg viewBox="0 0 24 24"><path d="M7 18a4.5 4.5 0 0 1-.6-9A6 6 0 0 1 18 9.5a4 4 0 0 1-.5 8.5z"/><path d="M10 13.5l2-2 2 2M12 11.5V16"/></svg>
+          <span data-i18n="navCloud">Cloud Gaming</span><i class="dot"></i>
+        </button>
         <button class="nav-item" data-view="history">
           <svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5M12 7v5l3.5 2"/></svg>
           <span data-i18n="navHistory">History</span><i class="dot"></i>
@@ -219,6 +223,15 @@
         <div id="addonList"></div>
       </section>
 
+      <section class="view" id="view-cloud">
+        <div class="section-head">
+          <div><h3 data-i18n="navCloud">Cloud Gaming</h3><p class="hint" id="cloudSubtitle"></p></div>
+          <button class="ghost sm" id="cloudRefresh" type="button">Refresh</button>
+        </div>
+        <p class="hint" id="cloudMessage" role="status" aria-live="polite"></p>
+        <div id="cloudPanel"></div>
+      </section>
+
       <section class="view" id="view-history">
         <div class="section-head">
           <h3 data-i18n="navHistory">History</h3>
@@ -382,6 +395,7 @@
   <script src="community.js"></script>
   <script src="chat.js"></script>
   <script src="renderer.js"></script>
+  <script src="cloud-mode.js"></script>
   <script src="theme2.js"></script>
 </body>
 </html>
