@@ -659,9 +659,10 @@ ipcMain.handle('cloud-apply', async (_event, id, options = {}) => {
         steps.push({ step: 'lossless', ...result });
         // Started again if it was open, after a successful edit so the profile
         // is ready, or the first time so it creates its settings file.
+        // Opened through the shell, like a desktop shortcut, so Lossless
+        // Scaling is not a child of this app and outlives it however it ends.
         if (wasRunning || result.ok || result.reason === 'cloudLosslessNoSettings') {
-          const child = require('child_process').spawn(status.lossless.exe, [], { cwd: path.dirname(status.lossless.exe), detached: true, stdio: 'ignore' });
-          child.unref();
+          await shell.openPath(status.lossless.exe);
         }
       }
     }
