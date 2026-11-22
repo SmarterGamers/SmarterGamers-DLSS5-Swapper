@@ -12,7 +12,8 @@ const feederRelease = require('./feeder-release');
 const { safePath } = require('./file-journal');
 
 const SKIP_DIRS = new Set([
-  '_dlss5_backup', 'reshade-shaders', 'host64', 'node_modules', '.git',
+  '_dlss5_backup', '_dlss5_mod_disabled', 'reshade-shaders', 'host64', 'node_modules', '.git',
+  'win-arm64ec', 'arm64',
   // Asset trees contain tens of thousands of files but never the runtime DLL
   // or executable we need. Skipping them lets packaged Unreal games be scanned
   // deeper without making every library refresh slower.
@@ -705,8 +706,19 @@ async function scanGame(gameDir) {
     try { recoverable = require('./apply').recoverableManifest(gameDir); } catch {}
   }
   const hasNativeDlss = Boolean(primaryDlss && (!install || !install.added || !install.added.some(item => item.toLowerCase() === primaryDlss.rel.toLowerCase())));
-  if (chosen) chosen.hasNativeDlss = hasNativeDlss;
-  for (const cand of exeCandidates) cand.hasNativeDlss = hasNativeDlss;
+  const hasNativeDlss5 = Boolean(
+    hasNativeDlss &&
+    streamlineFiles.some(f => /^sl\.dlss_nr\.dll$/i.test(f.name)) &&
+    dlssFiles.some(f => /^nvngx_dlssnr\.dll$/i.test(f.name))
+  );
+  if (chosen) {
+    chosen.hasNativeDlss = hasNativeDlss;
+    chosen.hasNativeDlss5 = hasNativeDlss5;
+  }
+  for (const cand of exeCandidates) {
+    cand.hasNativeDlss = hasNativeDlss;
+    cand.hasNativeDlss5 = hasNativeDlss5;
+  }
   let reshade = chosen ? inspectReShade(path.dirname(chosen.path)) : inspectReShade(gameDir);
   if (!reshade.installed && install && install.vulkanLayer &&
       fs.existsSync(install.vulkanLayer.manifest || '')) {
@@ -723,6 +735,7 @@ async function scanGame(gameDir) {
     chosen,
     hasAgilitySdk,
     hasNativeDlss,
+    hasNativeDlss5,
     emulator: chosen ? chosen.emulator : null,
     dlssFiles,
     primaryDlss,

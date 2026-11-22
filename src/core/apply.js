@@ -719,7 +719,7 @@ async function applySwap(config, onLog) {
     manifest.reshade = { installedByUs: false, file: null, filesAdded: [] };
 
     const payloadByName = new Map(source.payload.map((f) => [f.name.toLowerCase(), f]));
-    const existing = scan.dlssFiles.filter(file => /^nvngx_dlss(?:d|g)?\.dll$/i.test(file.name));
+    const existing = scan.dlssFiles.filter(file => /^nvngx_dlss(?:d|g|nr)?\.dll$/i.test(file.name));
 
     for (const file of existing) {
       const replacement = payloadByName.get(file.name.toLowerCase());
