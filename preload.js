@@ -19,6 +19,7 @@ contextBridge.exposeInMainWorld('lab', {
   cloudStatus: () => ipcRenderer.invoke('cloud-status'),
   cloudApply: (id, options) => ipcRenderer.invoke('cloud-apply', id, options),
   cloudOpen: (id) => ipcRenderer.invoke('cloud-open', id),
+  cloudSelect: (id) => ipcRenderer.invoke('cloud-select', id),
   cloudOpenNvidia: () => ipcRenderer.invoke('cloud-open-nvidia'),
   setLang: (lang) => ipcRenderer.invoke('set-lang', lang),
   setTheme: (theme) => ipcRenderer.invoke('set-theme', theme),

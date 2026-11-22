@@ -636,6 +636,35 @@ async function cloudCloseLossless() {
   }
   return false;
 }
+// Started by Explorer, as a desktop shortcut would be, so Lossless Scaling's
+// parent is Explorer, not this app: ending this app's process tree must not
+// end frame generation. (spawn and shell.openPath both leave it in this
+// app's tree.)
+function cloudStartLossless(exe) {
+  require('child_process').execFile('explorer.exe', [exe], { windowsHide: true }, () => {});
+}
+// Lossless Scaling scales with the profile selected in its own list, so the
+// browser's profile is selected there (UI Automation, see cloud-mode.js).
+function cloudSelectProfile(title) {
+  return new Promise(resolve => {
+    require('child_process').execFile('powershell.exe',
+      ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-Command', cloudMode.SELECT_PROFILE_PS],
+      { windowsHide: true, timeout: 30000, env: { ...process.env, SG_LS_PROFILE: title } },
+      (_error, stdout) => resolve(cloudMode.parseSelectResult(stdout)));
+  });
+}
+ipcMain.handle('cloud-select', async (_event, id) => {
+  try {
+    if (!cloudMode.BROWSERS[id]) return { ok: false, reason: 'cloudUnknownBrowser' };
+    const status = await cloudStatus();
+    if (!status.lossless.installed) return { ok: false, reason: 'cloudLosslessMissing' };
+    if (!cloudMode.losslessStatus(id).profile) return { ok: false, reason: 'cloudProfileNo' };
+    if (!status.lossless.running) cloudStartLossless(status.lossless.exe);
+    const title = cloudMode.profileTitle(id);
+    const selected = await cloudSelectProfile(title);
+    return { ok: selected === 'selected', selected, title };
+  } catch (error) { return { ok: false, message: error.message }; }
+});
 ipcMain.handle('cloud-status', async () => {
   try { return await cloudStatus(); } catch (error) { return { ok: false, message: error.message }; }
 });
@@ -659,13 +688,9 @@ ipcMain.handle('cloud-apply', async (_event, id, options = {}) => {
         steps.push({ step: 'lossless', ...result });
         // Started again if it was open, after a successful edit so the profile
         // is ready, or the first time so it creates its settings file.
-        // Started by Explorer, as a desktop shortcut would be, so Lossless
-        // Scaling's parent is Explorer, not this app: ending this app's
-        // process tree must not end frame generation. (spawn and
-        // shell.openPath both leave it in this app's tree.)
-        if (wasRunning || result.ok || result.reason === 'cloudLosslessNoSettings') {
-          require('child_process').execFile('explorer.exe', [status.lossless.exe], { windowsHide: true }, () => {});
-        }
+        if (wasRunning || result.ok || result.reason === 'cloudLosslessNoSettings') cloudStartLossless(status.lossless.exe);
+        // Then the new profile is selected, since that is what the hotkey uses.
+        if (result.ok) steps.push({ step: 'select', ok: (await cloudSelectProfile(result.title)) === 'selected', title: result.title });
       }
     }
     steps.push({ step: 'vsr', ok: status.vsr.enabled === true, ...status.vsr, reason: status.vsr.known ? (status.vsr.enabled ? null : 'cloudVsrOff') : 'cloudVsrUnknown' });

@@ -34,6 +34,7 @@
         <div class="v">${mark(b.hardwareAcceleration)} ${esc(hw)}</div>
         <div class="v">${mark(b.losslessProfile)} ${esc(b.losslessProfile ? tr('cloudProfileYes') : tr('cloudProfileNo'))}</div></div>
       <div class="row">
+        ${b.losslessProfile ? `<button class="glass-btn sm" type="button" data-cloud-select="${esc(b.id)}" ${busy ? 'disabled' : ''}>${esc(tr('cloudUseProfile'))}</button>` : ''}
         <button class="${ready ? 'ghost' : 'glass-btn'} sm" type="button" data-cloud-setup="${esc(b.id)}" ${busy ? 'disabled' : ''}>${esc(ready ? tr('cloudSetUpAgain') : tr('cloudSetUp'))}</button>
         <button class="ghost sm" type="button" data-cloud-open="${esc(b.id)}">${esc(tr('cloudOpenPlay'))}</button>
       </div></div>`;
@@ -79,6 +80,22 @@
     for (const button of document.querySelectorAll('[data-cloud-setup]')) {
       button.onclick = () => setup(button.dataset.cloudSetup, false);
     }
+    for (const button of document.querySelectorAll('[data-cloud-select]')) {
+      button.onclick = async () => {
+        if (busy) return;
+        busy = true;
+        button.disabled = true;
+        let result;
+        try { result = await window.lab.cloudSelect(button.dataset.cloudSelect); }
+        catch (error) { result = { ok: false, message: error.message }; }
+        busy = false;
+        button.disabled = false;
+        const title = result.title || (last?.browsers || []).find((b) => b.id === button.dataset.cloudSelect)?.profileTitle || '';
+        if (result.ok) say(tr('cloudSelected', title));
+        else if (result.reason) say(tr(result.reason));
+        else say(tr('cloudSelectFailed', title));
+      };
+    }
     for (const button of document.querySelectorAll('[data-cloud-open]')) {
       button.onclick = async () => {
         const result = await window.lab.cloudOpen(button.dataset.cloudOpen);
@@ -116,6 +133,8 @@
           lines.push(tr(step.reason));
           if (step.canRestart) restartButton = ` <button class="glass-btn sm" type="button" id="cloudRestartLs">${esc(tr('cloudRestartLossless'))}</button>`;
         }
+      } else if (step.step === 'select') {
+        lines.push(step.ok ? tr('cloudSelected', step.title) : tr('cloudSelectFailed', step.title));
       } else if (step.step === 'vsr' && !step.ok) {
         lines.push(tr(step.reason));
       }

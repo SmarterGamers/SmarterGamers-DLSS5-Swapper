@@ -235,8 +235,9 @@ function setElement(block, name, value) {
 function buildProfile(defaultBlock, id, display) {
   let block = defaultBlock.trim();
   for (const [name, value] of Object.entries(profileValues(id, display))) block = setElement(block, name, value);
-  // The application the profile belongs to. Lossless Scaling matches it
-  // against the window being scaled when the hotkey is pressed.
+  // The application the profile belongs to, as Lossless Scaling's own profile
+  // editor records it. It does not make the hotkey pick this profile (see
+  // SELECT_PROFILE_PS); with AutoScale off it only labels the profile.
   block = setElement(block, 'Path', BROWSERS[id].exe);
   return block;
 }
@@ -295,6 +296,45 @@ function writeLosslessProfile(id, { display, running, env = process.env, now = n
   return { ok: true, changed: before !== after, backup, title: profileTitle(id) };
 }
 
+// Lossless Scaling 3.2.2 scales with the profile selected in its own list:
+// a profile's application path does not make the hotkey pick it (tested:
+// with Default selected, Ctrl+Alt+S in Chrome used Default whether the path
+// was "chrome.exe" or the full path). So the profile is selected for the user
+// through UI Automation. The title is passed in the SG_LS_PROFILE environment
+// variable, never pasted into the script. Output: one of the SELECT_RESULTS.
+const SELECT_RESULTS = ['selected', 'notFound', 'noWindow'];
+const SELECT_PROFILE_PS = [
+  "$ErrorActionPreference = 'Stop'",
+  'Add-Type -AssemblyName UIAutomationClient, UIAutomationTypes',
+  '$title = $env:SG_LS_PROFILE',
+  '$A = [Windows.Automation.AutomationElement]',
+  '$listItem = New-Object Windows.Automation.PropertyCondition($A::ControlTypeProperty, [Windows.Automation.ControlType]::ListItem)',
+  'for ($try = 0; $try -lt 40; $try++) {',
+  '  $ls = Get-Process LosslessScaling -ErrorAction SilentlyContinue | Select-Object -First 1',
+  '  if ($ls) {',
+  '    $win = $A::RootElement.FindFirst([Windows.Automation.TreeScope]::Children, (New-Object Windows.Automation.PropertyCondition($A::ProcessIdProperty, $ls.Id)))',
+  '    if ($win) {',
+  '      $items = $win.FindAll([Windows.Automation.TreeScope]::Descendants, $listItem)',
+  '      foreach ($item in $items) {',
+  '        $names = @($item.Current.Name) + @($item.FindAll([Windows.Automation.TreeScope]::Descendants, [Windows.Automation.Condition]::TrueCondition) | ForEach-Object { $_.Current.Name })',
+  '        if ($names -contains $title) {',
+  '          $item.GetCurrentPattern([Windows.Automation.SelectionItemPattern]::Pattern).Select()',
+  "          'selected'; exit 0",
+  '        }',
+  '      }',
+  "      if ($items.Count -gt 0) { 'notFound'; exit 0 }",
+  '    }',
+  '  }',
+  '  Start-Sleep -Milliseconds 500',
+  '}',
+  "'noWindow'"
+].join('\n');
+
+function parseSelectResult(output) {
+  const word = String(output || '').trim().split(/\s+/).pop();
+  return SELECT_RESULTS.includes(word) ? word : 'noWindow';
+}
+
 function losslessStatus(id, env = process.env) {
   const file = losslessSettingsPath(env);
   if (!file || !exists(file)) return { settings: false, profile: false };
@@ -308,5 +348,6 @@ module.exports = {
   parseVsr, runningImages,
   steamLibraries, losslessExe, losslessSettingsPath, losslessStatus,
   flowScaleFor, targetFor, profileTitle, profileValues,
-  buildProfile, upsertCloudProfile, hasCloudProfile, wellFormed, writeLosslessProfile
+  buildProfile, upsertCloudProfile, hasCloudProfile, wellFormed, writeLosslessProfile,
+  SELECT_PROFILE_PS, SELECT_RESULTS, parseSelectResult
 };
