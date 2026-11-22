@@ -659,10 +659,12 @@ ipcMain.handle('cloud-apply', async (_event, id, options = {}) => {
         steps.push({ step: 'lossless', ...result });
         // Started again if it was open, after a successful edit so the profile
         // is ready, or the first time so it creates its settings file.
-        // Opened through the shell, like a desktop shortcut, so Lossless
-        // Scaling is not a child of this app and outlives it however it ends.
+        // Started by Explorer, as a desktop shortcut would be, so Lossless
+        // Scaling's parent is Explorer, not this app: ending this app's
+        // process tree must not end frame generation. (spawn and
+        // shell.openPath both leave it in this app's tree.)
         if (wasRunning || result.ok || result.reason === 'cloudLosslessNoSettings') {
-          await shell.openPath(status.lossless.exe);
+          require('child_process').execFile('explorer.exe', [status.lossless.exe], { windowsHide: true }, () => {});
         }
       }
     }
